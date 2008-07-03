@@ -42,7 +42,7 @@ public strictfp class Rectangle extends Particle {
 	 * @param width The width of this particle.
 	 * @param height The height of this particle.
 	 * @param rotation The rotation of this particle in radians.
-	 * @param fixed Determines if the particle is fixed or not. Fixed particles
+	 * @param isFixed Determines if the particle is fixed or not. Fixed particles
 	 * are not affected by forces or collisions and are good to use as surfaces.
 	 * Non-fixed particles move freely in response to collision and forces.
 	 * @param mass The mass of the particle
@@ -59,12 +59,12 @@ public strictfp class Rectangle extends Particle {
 			float width, 
 			float height, 
 			float rotation/*= 0*/, 
-			boolean fixed/*= false*/,
+			boolean isFixed/*= false*/,
 			float mass/*= 1*/, 
 			float elasticity/*= 0.3*/,
 			float friction/*= 0*/) {
 		
-		super(x, y, fixed, mass, elasticity, friction);
+		super(x, y, isFixed, mass, elasticity, friction);
 		
 		extents = new float[] {width/2, height/2};
 		axes = new Vector2f[] {new Vector2f(0,0), new Vector2f(0,0)};
@@ -78,8 +78,8 @@ public strictfp class Rectangle extends Particle {
 			float width, 
 			float height, 
 			float rotation/*= 0*/, 
-			boolean fixed/*= false*/) {
-		this(x,y,width,height,rotation,fixed,defaultMass,0.3f,0f);
+			boolean isFixed/*= false*/) {
+		this(x,y,width,height,rotation,isFixed,defaultMass,0.3f,0f);
 	}
 	
 	@Override
