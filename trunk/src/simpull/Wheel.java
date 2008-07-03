@@ -45,7 +45,7 @@ public strictfp class Wheel extends Circle {
 	 * @param x The initial x position.
 	 * @param y The initial y position.
 	 * @param radius The radius of this particle.
-	 * @param fixed Determines if the particle is fixed or not. Fixed particles
+	 * @param isFixed Determines if the particle is fixed or not. Fixed particles
 	 * are not affected by forces or collisions and are good to use as surfaces.
 	 * Non-fixed particles move freely in response to collision and forces.
 	 * @param mass The mass of the particle
@@ -57,12 +57,12 @@ public strictfp class Wheel extends Circle {
 			float x, 
 			float y, 
 			float radius, 
-			boolean fixed/*= false*/, 
+			boolean isFixed/*= false*/, 
 			float mass/*= 1*/, 
 			float elasticity/*= 0.3*/,
 			float friction/*= 0*/,
 			float traction/*= 1*/) {
-		super(x,y,radius,fixed, mass, elasticity, friction);
+		super(x,y,radius,isFixed, mass, elasticity, friction);
 		tan = new Vector2f(0,0);
 		normSlip = new Vector2f(0,0);
 		rim = new Rim(radius, 2); 	
@@ -79,8 +79,8 @@ public strictfp class Wheel extends Circle {
 		return rim.getSpeed();
 	}
 	
-	public void setSpeed(float s) {
-		rim.setSpeed(s);
+	public void setSpeed(float speed) {
+		rim.setSpeed(speed);
 	}
 
 	/**
@@ -91,8 +91,8 @@ public strictfp class Wheel extends Circle {
 		return rim.getAngularVelocity();
 	}
 	
-	public void setAngularVelocity(float a) {
-		rim.setAngularVelocity(a);
+	public void setAngularVelocity(float angularVelocity) {
+		rim.setAngularVelocity(angularVelocity);
 	}
 	
 	/**
@@ -111,8 +111,8 @@ public strictfp class Wheel extends Circle {
 		return 1 - traction;
 	}
 
-	public void setTraction(float t) {
-		traction = 1 - t;
+	public void setTraction(float traction) {
+		this.traction = 1 - traction;
 	}
 	
 	/**
