@@ -31,7 +31,6 @@ package simpull.events;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 
 
@@ -41,8 +40,7 @@ public final class EventManager {
 	private static final List<EventParticipator> eventParticipators = new ArrayList<EventParticipator>();
 	
 	private static Queue<Event> tmpEventQueue;
-	private static Map<String, simpull.events.EventHandler> tmpEventHandlers;
-	private static simpull.events.EventHandler tmpEventHandler;
+	private static List<simpull.events.EventHandler> tmpEventHandlers;
 	
 	public static void registerEventParticipator(EventParticipator ep) {
 		eventParticipators.add(ep);
@@ -51,11 +49,12 @@ public final class EventManager {
 	public static void manageEvents() {
 		for (EventParticipator ep : eventParticipators) {
 			tmpEventQueue = ep.getEventQueue();
-			tmpEventHandlers = ep.getEventHandlers();
 			for (Event event : tmpEventQueue) {
-				tmpEventHandler = tmpEventHandlers.get(event.getName());
-				if (tmpEventHandler != null) {
-					tmpEventHandler.handle(event);
+				tmpEventHandlers = ep.getEventHandlers(event.getName());
+				if (tmpEventHandlers != null) {
+					for (EventHandler eventHandler : tmpEventHandlers) {
+						eventHandler.handle(event);
+					}
 				}
 				tmpEventQueue.remove(event); // remove no matter if handled or not
 			}

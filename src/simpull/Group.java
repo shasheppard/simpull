@@ -36,10 +36,12 @@ import java.util.List;
  * The Group class can contain {@link Particle}, {@link IConstraint}, and {@link Composite}. Groups can be 
  * assigned to be checked for collision with other Groups and/or internally. 
  */ 
-public class Group extends BaseCollection {
+public class Group extends SimpullCollection {
 	
 	List<Composite> composites;
 	List<Group> collideWithGroups;
+	
+	private static final String CANNOT_ADD_INCOMPLETE_COMPOSITE_MESSAGE = "Cannot add an incomplete Composite to a Group.";
 	
 	private boolean collideInternal;
 	
@@ -64,13 +66,20 @@ public class Group extends BaseCollection {
 		}
 	}
 	
-	/** @param composites The {@link Composite}(s) to be added. */
-	public void add(Composite... newComposites) {
+	/** 
+	 * @param composites The {@link Composite}(s) to be added.
+	 * @throws IllegalStateException when one of the newComposites is not completed
+	 */
+	public void add(Composite... newComposites) throws IllegalStateException {
 		for (Composite composite : newComposites) {
-			composites.add(composite);
-			composite.setIsParented(true);
-			if (getIsParented()) {
-				composite.init();
+			if (composite.isCompositeCompleted()) {
+				composites.add(composite);
+				composite.setHasParent(true);
+				if (getHasParent()) {
+					composite.init();
+				}
+			} else {
+				throw new IllegalStateException(CANNOT_ADD_INCOMPLETE_COMPOSITE_MESSAGE);
 			}
 		}
 	}
@@ -78,7 +87,7 @@ public class Group extends BaseCollection {
 	/** @param composite the Composite to be removed. */
 	public void remove(Composite composite) {
 		composites.remove(composite);
-		composite.setIsParented(false);
+		composite.setHasParent(false);
 		composite.cleanup();
 	}
 	
@@ -163,7 +172,9 @@ public class Group extends BaseCollection {
 			// check against every other composite in this Group
 			for (int i = j + 1; i < clen; ++i) {
 				Composite compositeB = composites.get(i);
-				if (compositeB != null) compositeA.checkCollisionsVsCollection(compositeB);
+				if (compositeB != null) {
+					compositeA.checkCollisionsVsCollection(compositeB.getCollection());
+				}
 			}
 		}
 	}
@@ -179,14 +190,18 @@ public class Group extends BaseCollection {
 		for (int i = 0; i < clen; ++i) {
 			// check against the particles and constraints of g
 			Composite myComposite = composites.get(i);
-			if (myComposite == null) continue;
+			if (myComposite == null) {
+				continue;
+			}
 			myComposite.checkCollisionsVsCollection(group);
 			
 			// check against composites of g
 			for (int j = 0; j < gclen; ++j) {
 				groupComposite = group.composites.get(j);
-				if (groupComposite == null) continue;
-				myComposite.checkCollisionsVsCollection(groupComposite);
+				if (groupComposite == null) {
+					continue;
+				}
+				myComposite.checkCollisionsVsCollection(groupComposite.getCollection());
 			}
 		}
 		
@@ -196,7 +211,7 @@ public class Group extends BaseCollection {
 			if (groupComposite == null) {
 				continue;	
 			}
-			checkCollisionsVsCollection(groupComposite);
+			checkCollisionsVsCollection(groupComposite.getCollection());
 		}
 	}
 	

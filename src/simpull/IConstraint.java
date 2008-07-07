@@ -35,6 +35,8 @@ public interface IConstraint extends IPhysicsObject {
 	 * Corrects the position of the attached particles based on their position and
 	 * mass. This method is called automatically during the Simpull.step() cycle.
 	 */					
-	public abstract void resolve();
+	public void resolve();
+	
+	public boolean isCollidable();
 
 }

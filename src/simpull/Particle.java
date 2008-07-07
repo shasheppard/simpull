@@ -30,6 +30,8 @@
 package simpull;
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
@@ -72,7 +74,7 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 	private boolean isSolid;
 
 	private java.util.Queue<Event> eventQueue = new java.util.concurrent.ConcurrentLinkedQueue<Event>();
-	private Map<String, EventHandler> eventHandlers = new HashMap<String, EventHandler>();
+	private Map<String, List<EventHandler>> eventHandlersMap = new HashMap<String, List<EventHandler>>();
 		
 	public Particle (
 			float x, 
@@ -385,7 +387,7 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 	@Override
 	@SuppressWarnings("unchecked")
 	public boolean eventAttemptNotify(Event event) {
-		if (eventHandlers.get(event.getName()) != null) {
+		if (eventHandlersMap.get(event.getName()) != null) {
 			eventQueue.offer(event);
 			return true;
 		}
@@ -398,16 +400,33 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 		return false;
 	}
 	
+	/**
+	 * Add an {@link EventHandler} to handle events of the type with the eventName passed.
+	 * This implementation allows for multiple handlers for one event.
+	 * They will be executed in the order in which they were added.
+	 * @param eventHandler null to remove all handlers for the eventName
+	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public EventHandler eventAddHandler(String eventName, EventHandler eventHandler) {
-		return eventHandlers.put(eventName, eventHandler);
+	public void eventAddHandler(String eventName, EventHandler eventHandler) {
+		List<EventHandler> eventHandlers = eventHandlersMap.get(eventName);
+		if (eventHandler == null) {
+			if (eventHandlers != null && !eventHandlers.isEmpty()) {
+				eventHandlers.clear();
+			}
+			return;
+		}
+		if (eventHandlers == null) {
+			eventHandlers = new LinkedList<EventHandler>();
+			eventHandlersMap.put(eventName, eventHandlers);
+		}
+		eventHandlers.add(eventHandler);
 	}
 	
 	@Override
 	@SuppressWarnings("unchecked")
-	public Map<String, EventHandler> getEventHandlers() {
-		return eventHandlers;
+	public List<EventHandler> getEventHandlers(String eventName) {
+		return eventHandlersMap.get(eventName);
 	}
 	
 	@Override

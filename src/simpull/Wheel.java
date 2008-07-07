@@ -101,11 +101,9 @@ public strictfp class Wheel extends Circle {
 	 * to 0, there will be no traction and the WheelParticle will behave as if the 
 	 * surface was totally slippery, like ice. Values should be between 0 and 1. 
 	 * 
-	 * <p>
 	 * Note that the friction property behaves differently than traction. If the surface 
 	 * friction is set high during a collision, the WheelParticle will move slowly as if
 	 * the surface was covered in glue.
-	 * </p>
 	 */		
 	public float getTraction() {
 		return 1 - traction;
@@ -115,18 +113,12 @@ public strictfp class Wheel extends Circle {
 		this.traction = 1 - traction;
 	}
 	
-	/**
-	 * Sets up the visual representation of this particle. This method is automatically called when 
-	 * an particle is added to the engine.
-	 */
 	@Override
 	public void init() {
 		cleanup();
 	}
 
-	/**
-	 * The rotation of the wheel in radians.
-	 */
+	/** @return the rotation of the wheel in radians. */
 	@Override
 	public float getRotation() {
 		orientation.x = rim.position.x;
@@ -134,9 +126,6 @@ public strictfp class Wheel extends Circle {
 		return (float)(Math.atan2(orientation.y, orientation.x) + Math.PI);
 	} 
 
-	/**
-	 *
-	 */		
 	@Override
 	public void update(float dt) {
 		super.update(dt);

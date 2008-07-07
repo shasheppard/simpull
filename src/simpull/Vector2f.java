@@ -31,7 +31,7 @@ package simpull;
 	
 /** TODO remove most methods from here for performance reasons.
  * Almost all references to these methods have already been removed.
- * The only remaining class to refactor is {@link BaseCollection}.
+ * The only remaining class to refactor is {@link SimpullCollection}.
  */
 public final strictfp class Vector2f {
 	

@@ -43,7 +43,7 @@ public strictfp class Spring extends SimpleSpring {
 	 * 
 	 * @param p1
 	 * @param p2
-	 * @param collidable
+	 * @param isCollidable
 	 * @param min
 	 * @param mid
 	 * @param max
@@ -52,13 +52,13 @@ public strictfp class Spring extends SimpleSpring {
 	public Spring(
 			Particle p1, 
 			Particle p2,
-			boolean collidable,
+			boolean isCollidable,
 			float min, 
 			float mid, 
 			float max, 
 			float force) {
 		// FIXME: the last 3 parameters are hardcoded here for a quick dev test.
-		super(p1, p2, collidable, 2, 1, true);
+		super(p1, p2, isCollidable, 2, 1, true);
 		this.min = min;
 		this.mid = mid;
 		this.max = max;

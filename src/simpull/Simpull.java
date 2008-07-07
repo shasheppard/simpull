@@ -151,7 +151,7 @@ public final class Simpull {
 	public static void add(Group... newGroups) {
 		for (Group group : newGroups) {
 			groups.add(group);
-			group.setIsParented(true);
+			group.setHasParent(true);
 			group.init();
 		}
 	}
@@ -159,7 +159,7 @@ public final class Simpull {
 	/** @param group a {@link Group} to remove from the simpull system. */
 	public static void remove(Group group) {
 		groups.remove(group);
-		group.setIsParented(false);
+		group.setHasParent(false);
 		group.cleanup();
 	}
 	
