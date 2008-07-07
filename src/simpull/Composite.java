@@ -47,6 +47,8 @@ public strictfp class Composite extends Particle {
 	protected final SimpullCollection collection = new SimpullCollection();
 	/** This is used as a reference point, helpful in determining the current rotation. */
 	protected Particle firstParticleAdded;
+	/** This is used in conjunction with firstParticleAdded to apply rotational force (angular velocity) */
+	protected Particle middleParticleAdded;
 	protected Particle centerParticle;
 
 	private static final String UNABLE_TO_MODIFY_MESSAGE = "Cannot modify a Composite after it has been marked complete.";
@@ -55,6 +57,9 @@ public strictfp class Composite extends Particle {
 	private Vector2f delta = new Vector2f();
 	private boolean compositeCompleted;
 	private float initialReferenceRotation;
+	private float angularVelocity;
+	/** When no coordinates are given, the center point will be calculated based on the layout of the particles added */
+	private boolean calculateCenterPoint;
 	
 	/**
 	 * The center position of this object will be determined and set when all components are 
@@ -64,6 +69,13 @@ public strictfp class Composite extends Particle {
 	 */
 	public Composite(boolean isFixed, float mass) {
 		super(0f, 0f, isFixed, mass, 0f, 0f);
+		calculateCenterPoint = true;
+		setCollidable(false);
+	}
+	
+	public Composite(float centerX, float centerY, boolean isFixed, float mass) {
+		super(centerX, centerY, isFixed, mass, 0f, 0f);
+		calculateCenterPoint = false;
 		setCollidable(false);
 	}
 	
@@ -105,6 +117,10 @@ public strictfp class Composite extends Particle {
 		position.x = getX();
 		position.y = getY();
 		// TODO Does this need to take place for elasticity and friction too?
+	}
+	
+	public void setAngularVelocity(float angularVelocity) {
+		this.angularVelocity = angularVelocity;
 	}
 	
 	@Override
@@ -297,7 +313,14 @@ public strictfp class Composite extends Particle {
 	
 	void integrate(float dt2) {
 		collection.integrate(dt2);
+		
+		// handle rotational velocity
+		if (angularVelocity != 0f) {
+			rotateBy(angularVelocity * dt2, centerParticle.position);
+		}
+		
 		centerParticle.setRotation(getRotation()); // This currently is only needed to support the simpull2core view sync
+		centerParticle.update(dt2);
 	}		
 	
 	void satisfyConstraints() {
@@ -337,8 +360,12 @@ public strictfp class Composite extends Particle {
 	}
 	
 	private void setupCenterParticle() {
-		Vector2f centerPoint = calculateCenter();
-		centerParticle = new Particle(centerPoint.x, centerPoint.y, false, 0.1f, 0f, 0f);
+		if (calculateCenterPoint) {
+			Vector2f centerPoint = calculateCenter();
+			centerParticle = new Particle(centerPoint.x, centerPoint.y, false, 0.1f, 0f, 0f);
+		} else {
+			centerParticle = new Particle(position.x, position.y, false, 0.1f, 0f, 0f);
+		}
 		for (Particle particle : collection.getParticles()) {
 			SimpleSpring connectorToCenter = new SimpleSpring(centerParticle, particle, 1f, false, 1f, 1f, false);
 			collection.add(connectorToCenter);

@@ -29,48 +29,34 @@
 
 package simpull;
 		
-/**
- * A force represented by a 2D vector. 
- */
+/** A force represented by a 2D vector. */
 public class VectorForce implements IForce {
 
-	private float fvx;
-	private float fvy;	
+	private Vector2f force;	
+	private boolean useMass;
 	
-	private Vector2f value;	
-	private boolean scaleMass;
-	
-	
-	public VectorForce(boolean useMass, float vx, float vy) {
-		fvx = vx;
-		fvy = vy;
-		scaleMass = useMass;
-		value = new Vector2f(vx, vy);
+	public VectorForce(boolean useMass, float forceX, float forceY) {
+		this.useMass = useMass;
+		force = new Vector2f(forceX, forceY);
 	}
-			
 	
 	public void setVx(float x) {
-		fvx = x;
-		value.x = x;
+		force.x = x;
 	}
-	
 	
 	public void setVy(float y) {
-		fvy = y;
-		value.y = y;
+		force.y = y;
 	}
 	
-	
-	public void setUseMass(boolean b) {
-		scaleMass = b;
+	public void setUseMass(boolean useMass) {
+		this.useMass = useMass;
 	}
-	
 	
 	public Vector2f getValue(float invmass) {
-		if (scaleMass) { 
-			value.x = fvx * invmass;
-			value.y = fvy * invmass;
+		if (useMass) { 
+			force.x *= invmass;
+			force.y *= invmass;
 		}
-		return value;
+		return force;
 	}
 }
