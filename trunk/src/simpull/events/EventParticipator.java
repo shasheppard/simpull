@@ -29,7 +29,7 @@
 
 package simpull.events;
 
-import java.util.Map;
+import java.util.List;
 import java.util.Queue;
 
 public interface EventParticipator {
@@ -40,7 +40,7 @@ public interface EventParticipator {
 	public Queue<Event> getEventQueue();
 
 	@SuppressWarnings("unchecked")
-	public Map<String, EventHandler> getEventHandlers();
+	public List<EventHandler> getEventHandlers(String eventName);
 
 	///////////////////////////////////////////////////////////////////////////
 	// Mutators
@@ -51,6 +51,6 @@ public interface EventParticipator {
 	public boolean eventAttemptNotify(Event event);
 	
 	@SuppressWarnings("unchecked")
-	public EventHandler eventAddHandler(String eventName, EventHandler eventHandler);
+	public void eventAddHandler(String eventName, EventHandler eventHandler);
 	
 }

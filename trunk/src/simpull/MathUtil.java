@@ -34,6 +34,8 @@ final strictfp class MathUtil {
 	public static final float PI = (float)Math.PI;
 	public static final float TWO_PI = 2f * (float)Math.PI;
 	
+	private static final Vector2f tmp = new Vector2f();
+	
 	/** @return n clamped between min and max */	
 	static float clamp(float n, float min, float max) {
 		if (n < min) {
@@ -52,4 +54,27 @@ final strictfp class MathUtil {
 		}
 		return 1;
 	}
+	
+	/*
+	static float getThetaB(Vector2f a, Vector2f b, Vector2f c) {
+		tmp.x = b.x - c.x;
+		tmp.y = b.y - c.y;
+		float hypotenuse = (float)Math.sqrt(tmp.x * tmp.x + tmp.y * tmp.y);
+		tmp.x = a.x - b.x;
+		tmp.y = a.y - b.y;
+		float adjacent = (float)Math.sqrt(tmp.x * tmp.x + tmp.y * tmp.y);
+		float theta;
+		if (hypotenuse == 0f) { // avoid division by zero
+			tmp.x = a.x - c.x;
+			tmp.y = a.y - c.y;
+			float opposite = (float)Math.sqrt(tmp.x * tmp.x + tmp.y * tmp.y);
+			theta = (float)Math.atan(opposite / adjacent);
+		} else {
+			theta = (float)Math.acos(adjacent / hypotenuse);
+		}
+		// TODO change theta depending on the location of a
+		return theta;
+	}
+	*/
+	
 }

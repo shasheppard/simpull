@@ -32,7 +32,7 @@ package simpull;
 import java.util.ArrayList;
 import java.util.List;
 
-public strictfp abstract class BaseCollection {
+public strictfp class SimpullCollection {
 	
 	private List<Particle> particles = new ArrayList<Particle>();
 	private List<IConstraint> constraints = new ArrayList<IConstraint>();
@@ -125,12 +125,12 @@ public strictfp abstract class BaseCollection {
 		}
 	}
 			
-	boolean getIsParented() {
+	boolean getHasParent() {
 		return hasParent;
 	}	
 
-	void setIsParented(boolean b) {
-		hasParent = b;
+	void setHasParent(boolean hasParent) {
+		this.hasParent = hasParent;
 	}	
 	
 	void integrate(float dt2) {
@@ -164,7 +164,7 @@ public strictfp abstract class BaseCollection {
 			for (IConstraint constraint : constraints) {
 				if (constraint instanceof SimpleSpring) { // TODO This if was not here, so are we now missing something???
 					SimpleSpring spring = (SimpleSpring)constraint;
-					if (spring != null && spring.getCollidable() && ! spring.isConnectedTo(jParticle)) {
+					if (spring != null && spring.isCollidable() && ! spring.isConnectedTo(jParticle)) {
 						spring.getCollisionParticle().updatePosition();
 						detectCollisionDelegate(jParticle, spring.getCollisionParticle());
 					}
@@ -173,7 +173,7 @@ public strictfp abstract class BaseCollection {
 		}
 	}
 
-	void checkCollisionsVsCollection(BaseCollection group) {
+	void checkCollisionsVsCollection(SimpullCollection group) {
 		for (Particle myParticle : particles) {
 			if (myParticle == null || !myParticle.isCollidable()) {
 				continue;
@@ -188,7 +188,7 @@ public strictfp abstract class BaseCollection {
 			for (IConstraint theirConstraint : group.getConstraints()) {
 				if (theirConstraint instanceof SimpleSpring) { // TODO This if was not here, so are we now missing something???
 					SimpleSpring theirSpring = (SimpleSpring)theirConstraint;
-					if (theirSpring != null && theirSpring.getCollidable() && !theirSpring.isConnectedTo(myParticle)) {
+					if (theirSpring != null && theirSpring.isCollidable() && !theirSpring.isConnectedTo(myParticle)) {
 						theirSpring.getCollisionParticle().updatePosition();
 						detectCollisionDelegate(myParticle, theirSpring.getCollisionParticle());
 					}
@@ -199,7 +199,7 @@ public strictfp abstract class BaseCollection {
 		for (IConstraint myConstraint : constraints) {
 			if (myConstraint instanceof SimpleSpring) { // TODO This if was not here, so are we now missing something???
 				SimpleSpring mySpring = (SimpleSpring)myConstraint;
-				if (mySpring == null || ! mySpring.getCollidable()) {
+				if (mySpring == null || ! mySpring.isCollidable()) {
 					continue;
 				}
 				// check against every particle in the other collection

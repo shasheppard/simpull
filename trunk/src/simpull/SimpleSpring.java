@@ -69,8 +69,10 @@ public strictfp class SimpleSpring implements IConstraint {
 		this.stiffness = stiffness;
 		this.particle1 = particle1;
 		this.particle2 = particle2;
-		checkParticlesLocation();
-		
+		// if the two particles are at the same location, offset slightly
+		if (particle1.position.x == particle2.position.x && particle1.position.y == particle2.position.y) {
+			particle2.position.x += 0.0001;
+		}
 		restLength = getCurrLength();
 		setCollidable(isCollidable, rectHeight, rectScale, scaleToLength);
 	}
@@ -173,7 +175,8 @@ public strictfp class SimpleSpring implements IConstraint {
 	 * you can set the rectHeight and rectScale properties 
 	 * to alter the dimensions of the collidable area.
 	 */			
-	public boolean getCollidable() {
+	@Override
+	public boolean isCollidable() {
 		return isCollidable;
 	}
 	
@@ -224,7 +227,7 @@ public strictfp class SimpleSpring implements IConstraint {
 	@Override
 	public void init() {	
 		cleanup();
-		if (getCollidable()) {
+		if (isCollidable()) {
 			collisionParticle.init();
 		}
 	}
@@ -257,15 +260,6 @@ public strictfp class SimpleSpring implements IConstraint {
 	
 	SpringParticle getCollisionParticle(){
 		return collisionParticle;
-	}
-	
-	/**
-	 * if the two particles are at the same location, offset slightly
-	 */
-	private void checkParticlesLocation() {
-		if (particle1.position.x == particle2.position.x && particle1.position.y == particle2.position.y) {
-			particle2.position.x += 0.0001;
-		}
 	}
 	
 	/** This class is here to provide collision support for Spring instances where isCollidable is true. */
