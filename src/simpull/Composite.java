@@ -29,6 +29,9 @@
 
 package simpull;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import simpull.events.EventHandler;
 import simpull.events.sample.Events;
 import simpull.events.sample.Events.CollisionEvent;
@@ -44,14 +47,15 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	
 	/** This is used as a reference point, helpful in determining the current rotation. */
 	protected Particle firstParticleAdded;
-	/** This is used in conjunction with firstParticleAdded to apply rotational force (angular velocity) */
-	protected Particle middleParticleAdded;
 	protected final Particle centerParticle;
-
+	
 	private static final String UNABLE_TO_MODIFY_MESSAGE = "Cannot modify a Composite after it has been marked complete.";
 	private static final String ALREADY_COMPLETE_MESSAGE = "Cannot mark a Composite as complete that is already marked complete.";
 	private static final String CANNOT_ADD_INCOMPLETE_MESSAGE = "Cannot add a Composite that is not marked complete.";
+	private static final String CANNOT_ADD_PARENTED_MESSAGE = "Cannot add a Composite that has already been added to another Composite.";
 	
+	private List<Composite> composites = new ArrayList<Composite>();
+	private Composite parentComposite;
 	private Vector2f delta = new Vector2f();
 	private boolean compositeCompleted;
 	private float initialReferenceRotation;
@@ -145,7 +149,7 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 		for (Particle particle : particles) {
 			particle.setMass((particle.getMass() / massSum) * nonCenterMass);
 		}
-		centerParticle.setMass(centerMass);
+		centerParticle.setMass(centerMass); // centerParticle.setMass(0.1f);
 	}
 	
 	public float getMass() {
@@ -226,6 +230,11 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 			if (!newComposite.compositeCompleted) {
 				throw new IllegalStateException(CANNOT_ADD_INCOMPLETE_MESSAGE);
 			}
+			if (newComposite.getParentComposite() != null) { // if already belongs to a composite
+				throw new IllegalStateException(CANNOT_ADD_PARENTED_MESSAGE);
+			}
+			newComposite.setParentComposite(this);
+			composites.add(newComposite);
 			for (Particle newParticle : newComposite.particles) {
 				add(newParticle);
 			}
@@ -253,7 +262,9 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 		if (compositeCompleted) {
 			throw new IllegalStateException(UNABLE_TO_MODIFY_MESSAGE);
 		}
-		// FIXME add the impl
+		composites.remove(composite);
+		composite.setParentComposite(null);
+		// FIXME remove all the contents of the composite
 	}
 	
 	public boolean isCompositeCompleted() {
@@ -266,7 +277,12 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 
 	@Override
 	void integrate(float dt2) {
-		super.integrate(dt2);
+		if (parentComposite == null) {
+			super.integrate(dt2);
+		}
+		for (Composite composite : composites) {
+			composite.integrate(dt2);
+		}
 		centerParticle.update(dt2);
 		// handle rotational velocity
 		if (angularVelocity != 0f) {
@@ -276,6 +292,14 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 		// The following is deemed unnecessary after making Composite extends SimpullCollection again, b/c things changed.
 		//centerParticle.setRotation(getRotation()); // This currently is only needed to support the simpull2core view sync
 		//centerParticle.update(dt2);
+	}
+	
+	protected void setParentComposite(Composite parentComposite) {
+		this.parentComposite = parentComposite;
+	}
+	
+	protected Composite getParentComposite() {
+		return parentComposite;
 	}
 	
 	/* * This method integrates the particle, not taking into account velocity - just global/local forces. * /
