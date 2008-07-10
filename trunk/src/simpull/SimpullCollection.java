@@ -45,7 +45,7 @@ public strictfp class SimpullCollection {
 	private static Collision collisionA = new Collision();
 	private static Collision collisionB = new Collision();
 
-	public List<Particle> getParticles(){
+	public List<Particle> getParticles() {
 		return particles;
 	}
 	
@@ -149,22 +149,22 @@ public strictfp class SimpullCollection {
 		int numParticles = particles.size();
 		for (int j = 0; j < numParticles; ++j) {
 			Particle jParticle = particles.get(j);
-			if (jParticle == null || !jParticle.isCollidable()) {
+			if (!jParticle.isCollidable()) {
 				continue;
 			}
-			// check against every other particle in this AbstractCollection
+			// check against every other particle in this Collection
 			for (int i = j + 1; i < numParticles; ++i) {
 				Particle iParticle = particles.get(i);
-				if (iParticle != null && iParticle.isCollidable()) {
+				if (iParticle.isCollidable()) {
 					detectCollisionDelegate(jParticle, iParticle);
 				}
 			}
 			
-			// check against every other constraint in this AbstractCollection
+			// check against every other constraint in this Collection
 			for (IConstraint constraint : constraints) {
 				if (constraint instanceof SimpleSpring) { // TODO This if was not here, so are we now missing something???
 					SimpleSpring spring = (SimpleSpring)constraint;
-					if (spring != null && spring.isCollidable() && ! spring.isConnectedTo(jParticle)) {
+					if (spring.isCollidable() && !spring.isConnectedTo(jParticle)) {
 						spring.getCollisionParticle().updatePosition();
 						detectCollisionDelegate(jParticle, spring.getCollisionParticle());
 					}
@@ -173,22 +173,22 @@ public strictfp class SimpullCollection {
 		}
 	}
 
-	void checkCollisionsVsCollection(SimpullCollection group) {
+	void checkCollisionsVsCollection(SimpullCollection otherCollection) {
 		for (Particle myParticle : particles) {
-			if (myParticle == null || !myParticle.isCollidable()) {
+			if (!myParticle.isCollidable()) {
 				continue;
 			}
 			// check against every particle in the other collection
-			for (Particle theirParticle : group.getParticles()) {
-				if (theirParticle != null && theirParticle.isCollidable()) {
-					detectCollisionDelegate(myParticle, theirParticle);
+			for (Particle otherParticle : otherCollection.particles) {
+				if (otherParticle.isCollidable()) {
+					detectCollisionDelegate(myParticle, otherParticle);
 				}
 			}
 			// check against every constraint in the other collection
-			for (IConstraint theirConstraint : group.getConstraints()) {
-				if (theirConstraint instanceof SimpleSpring) { // TODO This if was not here, so are we now missing something???
-					SimpleSpring theirSpring = (SimpleSpring)theirConstraint;
-					if (theirSpring != null && theirSpring.isCollidable() && !theirSpring.isConnectedTo(myParticle)) {
+			for (IConstraint otherConstraint : otherCollection.constraints) {
+				if (otherConstraint instanceof SimpleSpring) { // TODO This if was not here, so are we now missing something???
+					SimpleSpring theirSpring = (SimpleSpring)otherConstraint;
+					if (theirSpring.isCollidable() && !theirSpring.isConnectedTo(myParticle)) {
 						theirSpring.getCollisionParticle().updatePosition();
 						detectCollisionDelegate(myParticle, theirSpring.getCollisionParticle());
 					}
@@ -199,14 +199,14 @@ public strictfp class SimpullCollection {
 		for (IConstraint myConstraint : constraints) {
 			if (myConstraint instanceof SimpleSpring) { // TODO This if was not here, so are we now missing something???
 				SimpleSpring mySpring = (SimpleSpring)myConstraint;
-				if (mySpring == null || ! mySpring.isCollidable()) {
+				if (!mySpring.isCollidable()) {
 					continue;
 				}
 				// check against every particle in the other collection
-				for (Particle theirParticle : group.getParticles()) {
-					if (theirParticle != null && theirParticle.isCollidable() && ! mySpring.isConnectedTo(theirParticle)) {
+				for (Particle otherParticle : otherCollection.particles) {
+					if (otherParticle.isCollidable() && !mySpring.isConnectedTo(otherParticle)) {
 						mySpring.getCollisionParticle().updatePosition();
-						detectCollisionDelegate(theirParticle, mySpring.getCollisionParticle());
+						detectCollisionDelegate(otherParticle, mySpring.getCollisionParticle());
 					}
 				}
 			}

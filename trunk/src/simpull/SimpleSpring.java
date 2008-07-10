@@ -181,7 +181,7 @@ public strictfp class SimpleSpring implements IConstraint {
 	}
 	
 	/**
-	 * For cases when the SpringConstraint is isCollidable and only one of the
+	 * For cases when isCollidable is true and only one of the
 	 * two end particles are fixed. This value will dispose of collisions near the
 	 * fixed particle, to correct for situations where the collision could never be
 	 * resolved. Values must be between 0.0 and 1.0.
@@ -267,8 +267,8 @@ public strictfp class SimpleSpring implements IConstraint {
 		
 		SimpleSpring parent;
 		
-		private Particle p1;
-		private Particle p2;
+		private Particle particle1;
+		private Particle particle2;
 		
 		private Vector2f avgVelocity;
 		private Vector2f lambda;
@@ -278,50 +278,48 @@ public strictfp class SimpleSpring implements IConstraint {
 		private Vector2f rcb;
 		private float s;
 		
-		private float _rectScale;
-		private float _rectHeight;
-		private float _fixedEndLimit;
+		private float rectScale;
+		private float rectHeight;
+		private float fixedEndLimit;
 				
 		public SpringParticle(
-				Particle p1, 
-				Particle p2, 
+				Particle particle1, 
+				Particle particle2, 
 				SimpleSpring parent, 
 				float rectHeight, 
 				float rectScale,
 				boolean scaleToLength) {
-			
 			super(0,0,0,0,0,false);
-			
-			this.p1 = p1;
-			this.p2 = p2;
+			this.particle1 = particle1;
+			this.particle2 = particle2;
 			
 			lambda = new Vector2f(0,0);
 			avgVelocity = new Vector2f(0,0);
 			
 			this.parent = parent;
-			_rectScale = rectScale;
-			_rectHeight = rectHeight;
+			this.rectScale = rectScale;
+			this.rectHeight = rectHeight;
 			this.scaleToLength = scaleToLength;
 			
-			_fixedEndLimit = 0;
+			fixedEndLimit = 0;
 			rca = new Vector2f();
 			rcb = new Vector2f();
 		}
 		
 		void setRectScale(float s) {
-			_rectScale = s;
+			rectScale = s;
 		}
 		
 		float getRectScale() {
-			return _rectScale;
+			return rectScale;
 		}
 		
 		void setRectHeight(float r) {
-			_rectHeight = r;
+			rectHeight = r;
 		}
 		
 		float getRectHeight() {
-			return _rectHeight;
+			return rectHeight;
 		}
 
 		/**
@@ -331,36 +329,36 @@ public strictfp class SimpleSpring implements IConstraint {
 		 * resolved.
 		 */	
 		void setFixedEndLimit(float f) {
-			_fixedEndLimit = f;
+			fixedEndLimit = f;
 		}
 		
 		float getFixedEndLimit() {
-			return _fixedEndLimit;
+			return fixedEndLimit;
 		}
 
 		/** @return the average mass of the two connected particles */
 		@Override
 		public float getMass() {
-			return (p1.getMass() + p2.getMass()) / 2; 
+			return (particle1.getMass() + particle2.getMass()) / 2; 
 		}
 		
 		/** @return the average elasticity of the two connected particles */
 		@Override
 		public float getElasticity() {
-			return (p1.getElasticity() + p2.getElasticity()) / 2; 
+			return (particle1.getElasticity() + particle2.getElasticity()) / 2; 
 		}
 		
 		/** @return the average friction of the two connected particles */
 		@Override
 		public float getFriction() {
-			return (p1.getFriction() + p2.getFriction()) / 2; 
+			return (particle1.getFriction() + particle2.getFriction()) / 2; 
 		}
 		
 		/** @return the average velocity of the two connected particles */
 		@Override
 		public Vector2f getVelocity(){
-			Vector2f p1v=  p1.getVelocity();
-			Vector2f p2v =  p2.getVelocity();
+			Vector2f p1v=  particle1.getVelocity();
+			Vector2f p2v =  particle2.getVelocity();
 			
 			avgVelocity.x = (p1v.x + p2v.x) / 2f;
 			avgVelocity.y = (p1v.y + p2v.y) / 2f;
@@ -374,8 +372,8 @@ public strictfp class SimpleSpring implements IConstraint {
 	   /** @return the average inverse mass. */
 		@Override
 		float getInvMass() {
-			if (p1.getFixed() && p2.getFixed()) return 0;
-			return 1 / ((p1.getMass() + p2.getMass()) / 2);  
+			if (particle1.getFixed() && particle2.getFixed()) return 0;
+			return 1 / ((particle1.getMass() + particle2.getMass()) / 2);  
 		}
 		
 		/** @return the value of the parent {@link SimpleSpring} isFixed property. */
@@ -386,9 +384,9 @@ public strictfp class SimpleSpring implements IConstraint {
 		
 		/** called only on collision */
 		void updatePosition()  {
-			Vector2f c = parent.getCenter();
-			position.x = c.x;
-			position.y = c.y;
+			Vector2f center = parent.getCenter();
+			position.x = center.x;
+			position.y = center.y;
 			
 			setWidth((scaleToLength) ? 
 					parent.getCurrLength() * getRectScale() : 
@@ -410,21 +408,21 @@ public strictfp class SimpleSpring implements IConstraint {
 			// if one is fixed then move the other particle the entire way out of 
 			// collision. also, dispose of collisions at the sides of the collision particle. The higher
 			// the fixedEndLimit value, the more of the collision particle not be effected by collision. 
-			if (p1.getFixed()) {
+			if (particle1.getFixed()) {
 				if (c2 <= getFixedEndLimit()) return;
 				lambda.x = mtd.x / c2;
 				lambda.y = mtd.y / c2;
-				p2.position.x += lambda.x;
-				p2.position.y += lambda.y;
-				p2.setVelocity(velocity);
+				particle2.position.x += lambda.x;
+				particle2.position.y += lambda.y;
+				particle2.setVelocity(velocity);
 
-			} else if (p2.getFixed()) {
+			} else if (particle2.getFixed()) {
 				if (c1 <= getFixedEndLimit()) return;
 				lambda.x = mtd.x / c1;
 				lambda.y = mtd.y / c1;
-				p1.position.x += lambda.x;
-				p1.position.y += lambda.y;
-				p1.setVelocity(velocity);		
+				particle1.position.x += lambda.x;
+				particle1.position.y += lambda.y;
+				particle1.setVelocity(velocity);		
 
 			// else both non fixed - move proportionally out of collision
 			} else { 
@@ -435,21 +433,21 @@ public strictfp class SimpleSpring implements IConstraint {
 				lambda.x = mtd.x / denom;
 				lambda.y = mtd.y / denom;
 			
-				p1.position.x += lambda.x * c1;
-				p1.position.y += lambda.y * c1;
+				particle1.position.x += lambda.x * c1;
+				particle1.position.y += lambda.y * c1;
 				
-				p2.position.x += lambda.x * c2;
-				p2.position.y += lambda.y * c2;
+				particle2.position.x += lambda.x * c2;
+				particle2.position.y += lambda.y * c2;
 			
 				// if collision is in the middle of collision particle set the velocity of both end 
 				// particles
 				if (t == 0.5) {
-					p1.setVelocity(velocity);
-					p2.setVelocity(velocity);
+					particle1.setVelocity(velocity);
+					particle2.setVelocity(velocity);
 				
 				// otherwise change the velocity of the particle closest to contact
 				} else {
-					Particle corrParticle = (t < 0.5) ? p1 : p2;
+					Particle corrParticle = (t < 0.5) ? particle1 : particle2;
 					corrParticle.setVelocity(velocity);
 				}
 			}
@@ -460,9 +458,9 @@ public strictfp class SimpleSpring implements IConstraint {
 		 * this is just treating the collision particle as if it were a line segment (AB).
 		 */
 		private float closestParamPoint(Vector2f point) {
-			Vector2f segmentAB = new Vector2f(p2.position.x - p1.position.x,
-					p2.position.y - p1.position.y);
-			Vector2f tmp = new Vector2f(point.x - p1.position.x, point.y - p1.position.y);
+			Vector2f segmentAB = new Vector2f(particle2.position.x - particle1.position.x,
+					particle2.position.y - particle1.position.y);
+			Vector2f tmp = new Vector2f(point.x - particle1.position.x, point.y - particle1.position.y);
 			float dot = segmentAB.x * tmp.x + segmentAB.y * tmp.y;
 			float dot2 = segmentAB.x * segmentAB.x + segmentAB.y * segmentAB.y;
 			float t = dot / dot2;
@@ -545,8 +543,8 @@ public strictfp class SimpleSpring implements IConstraint {
 		
 		/** pp1-pq1 will be the collision particle line segment on which we need parameterized s. */
 		private float closestPtSegmentSegment() {
-			Vector2f pp1 = p1.position;
-			Vector2f pq1= p2.position;
+			Vector2f pp1 = particle1.position;
+			Vector2f pq1= particle2.position;
 			Vector2f pp2= rca;
 			Vector2f pq2 = rcb;
 			

@@ -92,14 +92,14 @@ public class Group extends SimpullCollection {
 	}
 	
 	/** @param collidableGroups {@link Group} instances to be checked for collision against this one. */
-	public void add(Group... collidableGroups) {
+	public void registerCollidable(Group... collidableGroups) {
 		for (Group collidableGroup : collidableGroups) {
 			collideWithGroups.add(collidableGroup);
 		}
 	}
 
 	/** @param collidableGroup a {@link Group} to remove from the collidable list of this Group. */
-	public void remove(Group collidableGroup) {
+	public void unregisterCollidable(Group collidableGroup) {
 		collideWithGroups.remove(collidableGroup);
 	}
 
@@ -162,19 +162,14 @@ public class Group extends SimpullCollection {
 		
 		int clen = composites.size();
 		for (int j = 0; j < clen; ++j) {
-			Composite compositeA = composites.get(j);
-			if (compositeA == null) {
-				continue;
-			}
+			Composite jComposite = composites.get(j);
 			// check against non composite particles and constraints in this group
-			compositeA.checkCollisionsVsCollection(this);
+			jComposite.checkCollisionsVsCollection(this);
 			
 			// check against every other composite in this Group
 			for (int i = j + 1; i < clen; ++i) {
-				Composite compositeB = composites.get(i);
-				if (compositeB != null) {
-					compositeA.checkCollisionsVsCollection(compositeB);
-				}
+				Composite iComposite = composites.get(i);
+				jComposite.checkCollisionsVsCollection(iComposite);
 			}
 		}
 	}
