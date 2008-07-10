@@ -17,7 +17,7 @@ public final class CustomBodyFinisher implements Finisher {
 
 	@Override
 	public void finish(Composite composite) {
-		List<Particle> particles = composite.getCollection().getParticles();
+		List<Particle> particles = composite.getParticles();
 		int size = particles.size();
 		// First go around the outsides of the body and connect the particles.
 		// These spring will be collidable

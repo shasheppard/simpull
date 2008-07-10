@@ -29,8 +29,6 @@
 
 package simpull;
 
-import java.util.List;
-
 import simpull.events.EventHandler;
 import simpull.events.sample.Events;
 import simpull.events.sample.Events.CollisionEvent;
@@ -42,17 +40,17 @@ import simpull.events.sample.Events.CollisionEvent;
  * Composites can be added to a parent Group, along with Particles and Constraints.  
  * Members of a Composite are not checked for collision with one another, internally.
  */ 
-public strictfp class Composite extends Particle {
+public strictfp class Composite extends SimpullCollection implements IPhysicsObject {
 	
-	protected final SimpullCollection collection = new SimpullCollection();
 	/** This is used as a reference point, helpful in determining the current rotation. */
 	protected Particle firstParticleAdded;
 	/** This is used in conjunction with firstParticleAdded to apply rotational force (angular velocity) */
 	protected Particle middleParticleAdded;
-	protected Particle centerParticle;
+	protected final Particle centerParticle;
 
 	private static final String UNABLE_TO_MODIFY_MESSAGE = "Cannot modify a Composite after it has been marked complete.";
 	private static final String ALREADY_COMPLETE_MESSAGE = "Cannot mark a Composite as complete that is already marked complete.";
+	private static final String CANNOT_ADD_INCOMPLETE_MESSAGE = "Cannot add a Composite that is not marked complete.";
 	
 	private Vector2f delta = new Vector2f();
 	private boolean compositeCompleted;
@@ -60,6 +58,7 @@ public strictfp class Composite extends Particle {
 	private float angularVelocity;
 	/** When no coordinates are given, the center point will be calculated based on the layout of the particles added */
 	private boolean calculateCenterPoint;
+	private float mass;
 	
 	/**
 	 * The center position of this object will be determined and set when all components are 
@@ -68,15 +67,17 @@ public strictfp class Composite extends Particle {
 	 * @param mass the total mass of the {@link Composite}, distributed among all {@link IPhysicsObject} added
 	 */
 	public Composite(boolean isFixed, float mass) {
-		super(0f, 0f, isFixed, mass, 0f, 0f);
+		centerParticle = new Particle(0, 0, false, mass, 0f, 0f);
+		this.mass = mass;
 		calculateCenterPoint = true;
-		setCollidable(false);
+		centerParticle.setCollidable(false);
 	}
 	
 	public Composite(float centerX, float centerY, boolean isFixed, float mass) {
-		super(centerX, centerY, isFixed, mass, 0f, 0f);
+		centerParticle = new Particle(centerX, centerY, false, mass, 0f, 0f);
+		this.mass = mass;
 		calculateCenterPoint = false;
-		setCollidable(false);
+		centerParticle.setCollidable(false);
 	}
 	
 	/**
@@ -93,29 +94,26 @@ public strictfp class Composite extends Particle {
 		for (Finisher finisher : finishers) {
 			finisher.finish(this);
 		}
-		compositeCompleted = true;
-		final Particle compositeParticle = this;
-		for (Particle particle : collection.getParticles()) {
+		for (Particle particle : particles) {
 			// Pass all collision events up from the elements to this top level particle.
 			// TODO This should also include collidable constraints
 			particle.eventAddHandler(Events.CollisionEvent.class.getName(), new EventHandler<Events.CollisionEvent>() {
 				@Override
 				public void handle(CollisionEvent event) {
-					compositeParticle.eventAttemptNotify(event);
+					centerParticle.eventAttemptNotify(event);
 				}
 			});
 			particle.eventAddHandler(Events.FirstCollisionEvent.class.getName(), new EventHandler<Events.FirstCollisionEvent>() {
 				@Override
 				public void handle(Events.FirstCollisionEvent event) {
-					compositeParticle.eventAttemptNotify(event);
+					centerParticle.eventAttemptNotify(event);
 				}
 			});
 		}
-		setupCenterParticle();
-		initialReferenceRotation = getRelativeAngle(getCenter(), firstParticleAdded.position);
-		setMass(getMass());
-		position.x = getX();
-		position.y = getY();
+		setupCenter();
+		compositeCompleted = true;
+		initialReferenceRotation = getRelativeAngle(centerParticle.position, firstParticleAdded.position);
+		setMass(mass);
 		// TODO Does this need to take place for elasticity and friction too?
 	}
 	
@@ -123,109 +121,49 @@ public strictfp class Composite extends Particle {
 		this.angularVelocity = angularVelocity;
 	}
 	
-	@Override
-	public void addForce(IForce force) {
-		centerParticle.addForce(force);
-		// TODO Distribute?
-	}
-
-	@Override
 	public void setElasticity(float elasticity) {
-		super.setElasticity(elasticity);
 		// TODO Distribute
 	}
 
-	@Override
 	public void setFriction(float friction) {
-		super.setFriction(friction);
 		// TODO Distribute
 	}
 
-	@Override
+	/**
+	 * Distributes the mass passed throughout each particle in this collection.
+	 * The center particle is assigned the exact value passed in.
+	 * @param mass
+	 */
 	public void setMass(float mass) {
-		super.setMass(mass);
-		if (collection != null) {
-			// TODO maybe make a generic method for distributing a value and pass a visitor to know what is distributed
-			float massSum = 0f;
-			float compositeMass = getMass(); // the mass passed into the constructor
-			for (Particle particle : collection.getParticles()) {
-				massSum += particle.getMass();
-			}
-			for (Particle particle : collection.getParticles()) {
-				particle.setMass((particle.getMass() / massSum) * compositeMass);
-			}
+		// TODO maybe make a generic method for distributing a value and pass a visitor to know what is distributed
+		float massSum = 0f;
+		for (Particle particle : particles) {
+			massSum += particle.getMass();
 		}
+		float centerMass = mass / (float)particles.size();
+		float nonCenterMass = mass - centerMass;
+		for (Particle particle : particles) {
+			particle.setMass((particle.getMass() / massSum) * nonCenterMass);
+		}
+		centerParticle.setMass(centerMass);
+	}
+	
+	public float getMass() {
+		return mass;
 	}
 
-	@Override
-	public void setMultisample(int m) {
-		// TODO Auto-generated method stub
-		super.setMultisample(m);
-	}
-
-	@Override
-	public void setPosition(float x, float y) {
-		centerParticle.setPosition(x, y);
-	}
-
-	@Override
-	public void setSolid(boolean isSolid) {
-		// TODO Auto-generated method stub
-		super.setSolid(isSolid);
-	}
-
-	@Override
-	public void setVelocity(Vector2f velocity) {
-		centerParticle.setVelocity(velocity);
-	}
-
-	@Override
-	public void setX(float x) {
-		centerParticle.setX(x);
-	}
-
-	@Override
-	public void setY(float y) {
-		centerParticle.setY(y);
-	}
-
-	@Override
 	public float getRotation() {
 		// TODO make sure this is in the range 0 - 2pi
-		return getRelativeAngle(getCenter(), firstParticleAdded.position) - initialReferenceRotation;
+		return getRelativeAngle(centerParticle.position, firstParticleAdded.position) - initialReferenceRotation;
 	}
 
-	@Override
 	public void setRotation(float rotation) {
-		rotateBy(rotation - getRotation(), getCenter());
-	}
-	
-	/**
-	 * @return a copy of the position of the particle (i.e. changes to the object returned do not reflect).
-	 * You can alter the position of a particle three ways: change its position, set
-	 * its velocity, or apply a force to it. Setting the position of a non-fixed 
-	 * particle is not the same as setting its fixed property to true. A particle held
-	 * in place by its position will behave as if it's attached there by a 0 length
-	 * spring constraint. 
-	 */
-	@Override
-	public Vector2f getPosition() {
-		return getCenter();
-	}
-	
-	@Override
-	public float getX() {
-		return centerParticle.position.x;
-	}
-	
-	@Override
-	public float getY() {
-		return centerParticle.position.y;
+		rotateBy(rotation - getRotation(), centerParticle.position);
 	}
 	
 	/** @return the fixed state of the Composite. */	
 	public boolean getFixed() {
-		for (Particle particle : collection.getParticles()) {
+		for (Particle particle : particles) {
 			if (!particle.getFixed()) {
 				return false;	
 			}
@@ -239,7 +177,7 @@ public strictfp class Composite extends Particle {
 	 * value will return false if any of the component particles are not fixed.
 	 */	
 	public void setFixed(boolean isFixed) {
-		for (Particle particle : collection.getParticles()) {
+		for (Particle particle : particles) {
 			particle.setFixed(isFixed);	
 		}
 	}
@@ -247,29 +185,53 @@ public strictfp class Composite extends Particle {
 	@Override
 	public void init() {
 		super.init();
-		collection.init();
+		centerParticle.init();
 	}
 
 	@Override
 	public void cleanup() {
 		super.cleanup();
-		collection.cleanup();
+		centerParticle.cleanup();
 	}
 
+	@Override
 	public void add(IConstraint... newConstraints) throws IllegalStateException {
 		if (compositeCompleted) {
 			throw new IllegalStateException(UNABLE_TO_MODIFY_MESSAGE);
 		}
-		collection.add(newConstraints);
+		super.add(newConstraints);
 	}
 
+	@Override
 	public void add(Particle... newParticles) throws IllegalStateException {
 		if (compositeCompleted) {
 			throw new IllegalStateException(UNABLE_TO_MODIFY_MESSAGE);
 		}
-		collection.add(newParticles);
+		super.add(newParticles);
 		if (firstParticleAdded == null) {
 			firstParticleAdded = newParticles[0];
+		}
+	}
+	
+	/**
+	 * Add one/many {@link Composite} instances to this one.
+	 * @param newComposites
+	 * @throws IllegalStateException if this is already marked as complete, or if adding one that is not marked complete.
+	 */
+	public void add(Composite... newComposites) throws IllegalStateException {
+		if (compositeCompleted) {
+			throw new IllegalStateException(UNABLE_TO_MODIFY_MESSAGE);
+		}
+		for (Composite newComposite : newComposites) {
+			if (!newComposite.compositeCompleted) {
+				throw new IllegalStateException(CANNOT_ADD_INCOMPLETE_MESSAGE);
+			}
+			for (Particle newParticle : newComposite.particles) {
+				add(newParticle);
+			}
+			for (IConstraint newConstraint : newComposite.constraints) {
+				add(newConstraint);
+			}
 		}
 	}
 
@@ -277,22 +239,21 @@ public strictfp class Composite extends Particle {
 		if (compositeCompleted) {
 			throw new IllegalStateException(UNABLE_TO_MODIFY_MESSAGE);
 		}
-		collection.remove(constraint);
+		remove(constraint);
 	}
 
 	public void remove(Particle particle) throws IllegalStateException {
 		if (compositeCompleted) {
 			throw new IllegalStateException(UNABLE_TO_MODIFY_MESSAGE);
 		}
-		collection.remove(particle);
+		remove(particle);
 	}
 	
-	public List<IConstraint> getConstraints() {
-		return collection.getConstraints();
-	}
-
-	public List<Particle> getParticles() {
-		return collection.getParticles();
+	public void remove(Composite composite) throws IllegalStateException {
+		if (compositeCompleted) {
+			throw new IllegalStateException(UNABLE_TO_MODIFY_MESSAGE);
+		}
+		// FIXME add the impl
 	}
 	
 	public boolean isCompositeCompleted() {
@@ -302,42 +263,42 @@ public strictfp class Composite extends Particle {
 	public Particle getCenterParticle() {
 		return centerParticle;
 	}
-	
-	boolean getHasParent() {
-		return collection.getHasParent();
-	}	
 
-	void setHasParent(boolean hasParent) {
-		collection.setHasParent(hasParent);
-	}	
-	
+	@Override
 	void integrate(float dt2) {
-		collection.integrate(dt2);
-		
+		super.integrate(dt2);
+		centerParticle.update(dt2);
 		// handle rotational velocity
 		if (angularVelocity != 0f) {
 			rotateBy(angularVelocity * dt2, centerParticle.position);
 		}
 		
-		centerParticle.setRotation(getRotation()); // This currently is only needed to support the simpull2core view sync
-		centerParticle.update(dt2);
-	}		
-	
-	void satisfyConstraints() {
-		collection.satisfyConstraints();
-	}			
-	
-	void checkInternalCollisions() {
-		collection.checkInternalCollisions();
-	}
-
-	void checkCollisionsVsCollection(SimpullCollection group) {
-		collection.checkCollisionsVsCollection(group);
+		// The following is deemed unnecessary after making Composite extends SimpullCollection again, b/c things changed.
+		//centerParticle.setRotation(getRotation()); // This currently is only needed to support the simpull2core view sync
+		//centerParticle.update(dt2);
 	}
 	
-	SimpullCollection getCollection() {
-		return collection;
+	/* * This method integrates the particle, not taking into account velocity - just global/local forces. * /
+	private void updateCenterParticle(float dt2) {
+		Vector2f forces = centerParticle.getForces();
+		// accumulate global forces
+		float invMass = centerParticle.getInvMass();
+		for (IForce iForce : Simpull.forces) {
+			Vector2f vForce = iForce.getValue(invMass);
+			forces.x += vForce.x;
+			forces.y += vForce.y;
+		}
+		Vector2f positionBefore = new Vector2f(centerParticle.position.x, centerParticle.position.y);
+		float dt2damping = dt2 * Simpull.damping;
+		forces.x *= dt2damping;
+		forces.y *= dt2damping;
+		centerParticle.position.x += forces.x;
+		centerParticle.position.y += forces.y;
+		// clear all the forces out, the appropriate forces are added each step
+		forces.x = 0;
+		forces.y = 0;
 	}
+	*/
 	
 	/** @return the relative angle in radians from the center to the point */
 	private float getRelativeAngle(Vector2f center, Vector2f point) {
@@ -348,27 +309,32 @@ public strictfp class Composite extends Particle {
 	
 	/** Rotates the Composite to an angle specified in radians, around a given center */
 	private void rotateBy(float angleRadians, Vector2f center) {
-		for (Particle particle : collection.getParticles()) {
+		for (Particle particle : particles) {
 			Vector2f diff = particle.getCenter();
 			diff.x -= center.x;
 			diff.y -= center.y;
 			float radius = (float)Math.sqrt(diff.x * diff.x + diff.y * diff.y);
 			float angle = getRelativeAngle(center, particle.getCenter()) + angleRadians;
-			particle.setX((float)(Math.cos(angle) * radius) + center.x);
-			particle.setY((float)(Math.sin(angle) * radius) + center.y);
+			// To make sure the composite's velocity is not affected by changes to posotion from rotating,
+			// we take the velocity before updating the position and set it back afterward.
+			Vector2f velocity = particle.getVelocity();
+			particle.position.x = (float)(Math.cos(angle) * radius) + center.x;
+			particle.position.y = (float)(Math.sin(angle) * radius) + center.y;
+			particle.setVelocity(velocity);
 		}
 	}
 	
-	private void setupCenterParticle() {
+	private void setupCenter() {
 		if (calculateCenterPoint) {
 			Vector2f centerPoint = calculateCenter();
-			centerParticle = new Particle(centerPoint.x, centerPoint.y, false, 0.1f, 0f, 0f);
-		} else {
-			centerParticle = new Particle(position.x, position.y, false, 0.1f, 0f, 0f);
+			centerParticle.position.x = centerPoint.x;
+			centerParticle.position.y = centerPoint.y;
 		}
-		for (Particle particle : collection.getParticles()) {
+		// Just have to set this in order to keep the velocity at 0, b/c this sets the prevPosition...thus, keeps the velocity at 0
+		centerParticle.setPosition(centerParticle.position.x, centerParticle.position.y);
+		for (Particle particle : particles) {
 			SimpleSpring connectorToCenter = new SimpleSpring(centerParticle, particle, 1f, false, 1f, 1f, false);
-			collection.add(connectorToCenter);
+			add(connectorToCenter);
 		}
 	}
 	
@@ -377,7 +343,7 @@ public strictfp class Composite extends Particle {
 		
 		float minX = Float.MAX_VALUE;
 		float maxX = Float.MIN_VALUE;
-		for (Particle particle : collection.getParticles()) {
+		for (Particle particle : particles) {
 			if (particle.position.x > maxX) {
 				maxX = particle.position.x;
 			}
@@ -389,7 +355,7 @@ public strictfp class Composite extends Particle {
 
 		float minY = Float.MAX_VALUE;
 		float maxY = Float.MIN_VALUE;
-		for (Particle particle : collection.getParticles()) {
+		for (Particle particle : particles) {
 			if (particle.position.y > maxY) {
 				maxY = particle.position.y;
 			}

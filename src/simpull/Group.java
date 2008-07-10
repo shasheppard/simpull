@@ -173,7 +173,7 @@ public class Group extends SimpullCollection {
 			for (int i = j + 1; i < clen; ++i) {
 				Composite compositeB = composites.get(i);
 				if (compositeB != null) {
-					compositeA.checkCollisionsVsCollection(compositeB.getCollection());
+					compositeA.checkCollisionsVsCollection(compositeB);
 				}
 			}
 		}
@@ -201,7 +201,7 @@ public class Group extends SimpullCollection {
 				if (groupComposite == null) {
 					continue;
 				}
-				myComposite.checkCollisionsVsCollection(groupComposite.getCollection());
+				myComposite.checkCollisionsVsCollection(groupComposite);
 			}
 		}
 		
@@ -211,7 +211,7 @@ public class Group extends SimpullCollection {
 			if (groupComposite == null) {
 				continue;	
 			}
-			checkCollisionsVsCollection(groupComposite.getCollection());
+			checkCollisionsVsCollection(groupComposite);
 		}
 	}
 	

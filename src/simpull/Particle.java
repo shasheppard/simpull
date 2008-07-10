@@ -313,15 +313,13 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 	 * 
 	 * @param iForce An IForce object.
 	 */ 
-	 public void addForce(IForce iForce) {
-		 Vector2f vForce = iForce.getValue(invMass);
-		 forces.x += vForce.x;
-		 forces.y += vForce.y;
-	 }
+	public void addForce(IForce iForce) {
+		Vector2f vForce = iForce.getValue(invMass);
+		forces.x += vForce.x;
+		forces.y += vForce.y;
+	}
 	
-	/**
-	 * This method integrates the particle.  Called during the Simpull.step() cycle.
-	 */
+	/**This method integrates the particle.  Called during the Simpull.step() cycle. */
 	public void update(float dt2) {
 		if (isFixed) {
 			return;
@@ -433,6 +431,11 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 	@SuppressWarnings("unchecked")
 	public Queue<Event> getEventQueue() {
 		return eventQueue;
+	}
+	
+	/** @return the actual forces Vector2f */
+	Vector2f getForces() {
+		return forces;
 	}
 	
 	/**

@@ -34,9 +34,9 @@ import java.util.List;
 
 public strictfp class SimpullCollection {
 	
-	private List<Particle> particles = new ArrayList<Particle>();
-	private List<IConstraint> constraints = new ArrayList<IConstraint>();
-	private boolean hasParent;
+	protected List<Particle> particles = new ArrayList<Particle>();
+	protected List<IConstraint> constraints = new ArrayList<IConstraint>();
+	protected boolean hasParent;
 	
 	///////////////////////////////////////////////////////////////////////////
 	// Collision variables
@@ -149,7 +149,7 @@ public strictfp class SimpullCollection {
 		int numParticles = particles.size();
 		for (int j = 0; j < numParticles; ++j) {
 			Particle jParticle = particles.get(j);
-			if (jParticle == null || ! jParticle.isCollidable()) {
+			if (jParticle == null || !jParticle.isCollidable()) {
 				continue;
 			}
 			// check against every other particle in this AbstractCollection
