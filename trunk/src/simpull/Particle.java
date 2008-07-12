@@ -319,7 +319,7 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 		forces.y += vForce.y;
 	}
 	
-	/**This method integrates the particle.  Called during the Simpull.step() cycle. */
+	/** This method integrates the particle.  Called during the Simpull.step() cycle. */
 	public void update(float dt2) {
 		if (isFixed) {
 			return;
