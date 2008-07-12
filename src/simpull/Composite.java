@@ -31,8 +31,11 @@ package simpull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 
+import simpull.events.Event;
 import simpull.events.EventHandler;
+import simpull.events.EventParticipator;
 import simpull.events.sample.Events;
 import simpull.events.sample.Events.CollisionEvent;
 	
@@ -42,8 +45,11 @@ import simpull.events.sample.Events.CollisionEvent;
  * The Composite can be rotated all as one around a single point. 
  * Composites can be added to a parent Group, along with Particles and Constraints.  
  * Members of a Composite are not checked for collision with one another, internally.
+ * NOTE: All collision events are passed straight through to the center particle.
+ * 			In fact, all {@link EventParticipator} method implementations delegate to the
+ * 			center particle.
  */ 
-public strictfp class Composite extends SimpullCollection implements IPhysicsObject {
+public strictfp class Composite extends SimpullCollection implements IPhysicsObject, EventParticipator {
 	
 	/** This is used as a reference point, helpful in determining the current rotation. */
 	protected Particle firstParticleAdded;
@@ -105,6 +111,20 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 				@Override
 				public void handle(CollisionEvent event) {
 					centerParticle.eventAttemptNotify(event);
+					final Vector2f collisionNormal = event.data.vNormal;
+					// if this composite has angular velocity, something special needs to happen
+					if (angularVelocity != 0f) {
+						System.out.println("applying force to center particle, b/c angular velocity of composite was set");
+						centerParticle.addForce(new IForce() {
+							@Override
+							public Vector2f getValue(float invMass) {
+								// TODO I dont think invMass should come into play, but check on it
+								// I thought this was good originally, and until i know what works, this will stay as reference: 
+								//		return new Vector2f(angularVelocity * -collisionNormal.y, angularVelocity * collisionNormal.x);
+								return new Vector2f(angularVelocity * collisionNormal.y * 10, angularVelocity * collisionNormal.x * 10);
+							}
+						});
+					}
 				}
 			});
 			particle.eventAddHandler(Events.FirstCollisionEvent.class.getName(), new EventHandler<Events.FirstCollisionEvent>() {
@@ -274,9 +294,43 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	public Particle getCenterParticle() {
 		return centerParticle;
 	}
+	
+	@Override
+	public void eventAddHandler(String eventName, EventHandler eventHandler) {
+		// TODO Think about an implementation like this, or perhaps call to both (i.e. propogate upward)
+//		if (parentComposite != null) {
+//			parentComposite.eventAddHandler(eventName, eventHandler);
+//		} else {
+//			centerParticle.eventAddHandler(eventName, eventHandler);
+//		}
+
+		centerParticle.eventAddHandler(eventName, eventHandler);
+	}
+
+	@Override
+	public boolean eventAttemptNotify(Event event) {
+		return centerParticle.eventAttemptNotify(event);
+	}
+
+	@Override
+	public boolean eventDispatchTo(String byName, Event event) {
+		return centerParticle.eventDispatchTo(byName, event);
+	}
+
+	@Override
+	public List<EventHandler> getEventHandlers(String eventName) {
+		return centerParticle.getEventHandlers(eventName);
+	}
+
+	@Override
+	public Queue<Event> getEventQueue() {
+		return centerParticle.getEventQueue();
+	}
 
 	@Override
 	void integrate(float dt2) {
+		// because the parent composite will have all the particles/constraints added from here, nothing
+		// good will come from calling integrate more than once
 		if (parentComposite == null) {
 			super.integrate(dt2);
 		}
