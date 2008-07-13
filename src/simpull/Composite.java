@@ -111,20 +111,6 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 				@Override
 				public void handle(CollisionEvent event) {
 					centerParticle.eventAttemptNotify(event);
-					final Vector2f collisionNormal = event.data.vNormal;
-					// if this composite has angular velocity, something special needs to happen
-					if (angularVelocity != 0f) {
-						System.out.println("applying force to center particle, b/c angular velocity of composite was set");
-						centerParticle.addForce(new IForce() {
-							@Override
-							public Vector2f getValue(float invMass) {
-								// TODO I dont think invMass should come into play, but check on it
-								// I thought this was good originally, and until i know what works, this will stay as reference: 
-								//		return new Vector2f(angularVelocity * -collisionNormal.y, angularVelocity * collisionNormal.x);
-								return new Vector2f(angularVelocity * collisionNormal.y * 10, angularVelocity * collisionNormal.x * 10);
-							}
-						});
-					}
 				}
 			});
 			particle.eventAddHandler(Events.FirstCollisionEvent.class.getName(), new EventHandler<Events.FirstCollisionEvent>() {
@@ -342,10 +328,6 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 		if (angularVelocity != 0f) {
 			rotateBy(angularVelocity * dt2, centerParticle.position);
 		}
-		
-		// The following is deemed unnecessary after making Composite extends SimpullCollection again, b/c things changed.
-		//centerParticle.setRotation(getRotation()); // This currently is only needed to support the simpull2core view sync
-		//centerParticle.update(dt2);
 	}
 	
 	protected void setParentComposite(Composite parentComposite) {
@@ -355,28 +337,6 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	protected Composite getParentComposite() {
 		return parentComposite;
 	}
-	
-	/* * This method integrates the particle, not taking into account velocity - just global/local forces. * /
-	private void updateCenterParticle(float dt2) {
-		Vector2f forces = centerParticle.getForces();
-		// accumulate global forces
-		float invMass = centerParticle.getInvMass();
-		for (IForce iForce : Simpull.forces) {
-			Vector2f vForce = iForce.getValue(invMass);
-			forces.x += vForce.x;
-			forces.y += vForce.y;
-		}
-		Vector2f positionBefore = new Vector2f(centerParticle.position.x, centerParticle.position.y);
-		float dt2damping = dt2 * Simpull.damping;
-		forces.x *= dt2damping;
-		forces.y *= dt2damping;
-		centerParticle.position.x += forces.x;
-		centerParticle.position.y += forces.y;
-		// clear all the forces out, the appropriate forces are added each step
-		forces.x = 0;
-		forces.y = 0;
-	}
-	*/
 	
 	/** @return the relative angle in radians from the center to the point */
 	private float getRelativeAngle(Vector2f center, Vector2f point) {
@@ -393,12 +353,8 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 			diff.y -= center.y;
 			float radius = (float)Math.sqrt(diff.x * diff.x + diff.y * diff.y);
 			float angle = getRelativeAngle(center, particle.getCenter()) + angleRadians;
-			// To make sure the composite's velocity is not affected by changes to posotion from rotating,
-			// we take the velocity before updating the position and set it back afterward.
-			Vector2f velocity = particle.getVelocity();
 			particle.position.x = (float)(Math.cos(angle) * radius) + center.x;
 			particle.position.y = (float)(Math.sin(angle) * radius) + center.y;
-			particle.setVelocity(velocity);
 		}
 	}
 	
