@@ -32,12 +32,15 @@ package simpull;
 import java.util.ArrayList;
 import java.util.List;
 
+import simpull.SimpleSpring.SpringParticle;
+
 public strictfp class SimpullCollection {
 	
 	protected List<Particle> particles = new ArrayList<Particle>();
 	protected List<IConstraint> constraints = new ArrayList<IConstraint>();
 	protected boolean hasParent;
 	
+	private SpringParticle tmpCollisionParticle;
 	///////////////////////////////////////////////////////////////////////////
 	// Collision variables
 	private static Vector2f collisionNormal = new Vector2f();
@@ -189,8 +192,9 @@ public strictfp class SimpullCollection {
 				if (otherConstraint instanceof SimpleSpring) { // TODO This if was not here, so are we now missing something???
 					SimpleSpring theirSpring = (SimpleSpring)otherConstraint;
 					if (theirSpring.isCollidable() && !theirSpring.isConnectedTo(myParticle)) {
-						theirSpring.getCollisionParticle().updatePosition();
-						detectCollisionDelegate(myParticle, theirSpring.getCollisionParticle());
+						tmpCollisionParticle = theirSpring.getCollisionParticle();
+						tmpCollisionParticle.updatePosition();
+						detectCollisionDelegate(myParticle, tmpCollisionParticle);
 					}
 				}
 			}
@@ -205,8 +209,9 @@ public strictfp class SimpullCollection {
 				// check against every particle in the other collection
 				for (Particle otherParticle : otherCollection.particles) {
 					if (otherParticle.isCollidable && !mySpring.isConnectedTo(otherParticle)) {
-						mySpring.getCollisionParticle().updatePosition();
-						detectCollisionDelegate(otherParticle, mySpring.getCollisionParticle());
+						tmpCollisionParticle = mySpring.getCollisionParticle();
+						tmpCollisionParticle.updatePosition();
+						detectCollisionDelegate(otherParticle, tmpCollisionParticle);
 					}
 				}
 			}
@@ -384,13 +389,13 @@ public strictfp class SimpullCollection {
 	private static final boolean testCollisionOBBvsOBB(Rectangle obbA, Rectangle obbB) {
 		collisionDepth = Float.POSITIVE_INFINITY;
 		for (int i = 0; i < 2; ++i) {
-			Vector2f axisA = obbA.getAxes()[i];
+			Vector2f axisA = obbA.axes[i];
 		    float depthA = testIntervals(
 		    		obbA.getProjection(axisA), obbB.getProjection(axisA));
 		    if (depthA == 0) {
 		    	return false;
 		    }
-		    Vector2f axisB = obbB.getAxes()[i];
+		    Vector2f axisB = obbB.axes[i];
 		    float depthB = testIntervals(
 		    		obbA.getProjection(axisB), obbB.getProjection(axisB));
 		    if (depthB == 0) {
@@ -424,7 +429,7 @@ public strictfp class SimpullCollection {
 		
 		// first go through the axes of the rectangle
 		for (int i = 0; i < 2; ++i) {
-			Vector2f boxAxis = obb.getAxes()[i];
+			Vector2f boxAxis = obb.axes[i];
 			float depth = testIntervals(
 					obb.getProjection(boxAxis), circle.getProjection(boxAxis));
 			if (depth == 0) return false;
@@ -514,12 +519,12 @@ public strictfp class SimpullCollection {
  		Vector2f q = new Vector2f(obb.samp.x, obb.samp.y);
 
 		for (int i = 0; i < 2; ++i) {
-			float dist = d.dot(obb.getAxes()[i]);
+			float dist = d.dot(obb.axes[i]);
 
-			if (dist >= 0) dist = obb.getExtents()[i];
-			else if (dist < 0) dist = -obb.getExtents()[i];
+			if (dist >= 0) dist = obb.extents[i];
+			else if (dist < 0) dist = -obb.extents[i];
 
-			q.plusEquals(obb.getAxes()[i].mult(dist));
+			q.plusEquals(obb.axes[i].mult(dist));
 		}
 		return q;
 	}
