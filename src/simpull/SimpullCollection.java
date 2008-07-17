@@ -41,6 +41,7 @@ public strictfp class SimpullCollection {
 	protected boolean hasParent;
 	
 	private SpringParticle tmpCollisionParticle;
+	
 	///////////////////////////////////////////////////////////////////////////
 	// Collision variables
 	private static Vector2f collisionNormal = new Vector2f();
@@ -264,21 +265,34 @@ public strictfp class SimpullCollection {
         populateCollision(collisionB);
 
         // calculate the coefficient of restitution as the normal component
-        Vector2f vNormalA = (collisionB.vNormal.mult((totalElasticity + 1) * collisionA.me.getInvMass()).plus(
-        		collisionA.vNormal.mult(collisionB.me.getInvMass() - totalElasticity * collisionA.me.getInvMass()))).divEquals(sumInvMass);
-        Vector2f vNormalB = (collisionA.vNormal.mult((totalElasticity + 1) * collisionB.me.getInvMass()).plus(
-        		collisionB.vNormal.mult(collisionA.me.getInvMass() - totalElasticity * collisionB.me.getInvMass()))).divEquals(sumInvMass);
+        float teaim = (totalElasticity + 1) * collisionA.me.getInvMass();
+        Vector2f bnaim = new Vector2f(collisionB.vNormal.x * teaim, collisionB.vNormal.y * teaim);
+        float bimaim = collisionB.me.getInvMass() - totalElasticity * collisionA.me.getInvMass();
+        Vector2f bnaim_plus_abimaim = new Vector2f(bnaim.x + collisionA.vNormal.x * bimaim, bnaim.y + collisionA.vNormal.y * bimaim);
+        Vector2f vNormalA = bnaim_plus_abimaim.divEquals(sumInvMass);
+        
+        float tebim = (totalElasticity + 1) * collisionB.me.getInvMass();
+        Vector2f anaim = new Vector2f(collisionA.vNormal.x * tebim, collisionA.vNormal.y * tebim);
+        float aimbim = collisionA.me.getInvMass() - totalElasticity * collisionB.me.getInvMass();
+        Vector2f anaim_plus_abimaim = new Vector2f(anaim.x + collisionA.vNormal.x * aimbim, anaim.y + collisionA.vNormal.y * aimbim);
+        Vector2f vNormalB = anaim_plus_abimaim.divEquals(sumInvMass);
         
         // apply friction to the tangental component
-        collisionA.vTangent.multEquals(totalFriction);
-        collisionB.vTangent.multEquals(totalFriction);
+        collisionA.vTangent.x *= totalFriction;
+        collisionA.vTangent.y *= totalFriction;
+        collisionB.vTangent.x *= totalFriction;
+        collisionB.vTangent.y *= totalFriction;
         
-        // scale the mtd by the ratio of the masses. heavier particles move less 
-        Vector2f mtdA = mtd.mult( collisionA.me.getInvMass() / sumInvMass);     
-        Vector2f mtdB = mtd.mult(-collisionB.me.getInvMass() / sumInvMass);
+        // scale the mtd by the ratio of the masses. heavier particles move less
+        float aMassPct = collisionA.me.getInvMass() / sumInvMass;
+        Vector2f mtdA = new Vector2f(mtd.x * aMassPct, mtd.y * aMassPct);     
+        float bNMassPct = -collisionB.me.getInvMass() / sumInvMass;
+        Vector2f mtdB = new Vector2f(mtd.x * bNMassPct, mtd.y * bNMassPct);     
         // add the tangental component to the normal component for the new velocity 
-        vNormalA.plusEquals(collisionA.vTangent);
-        vNormalB.plusEquals(collisionB.vTangent);
+        vNormalA.x += collisionA.vTangent.x;
+        vNormalA.y += collisionA.vTangent.y;
+        vNormalB.x += collisionB.vTangent.x;
+        vNormalB.y += collisionB.vTangent.y;
 
         // Make sure to pass a copy of the collision because these variables change all the time
         collisionA.me.respondToCollision(Collision.copy(collisionA), mtdA, vNormalA, collisionNormal, collisionDepth, -1);
@@ -291,14 +305,14 @@ public strictfp class SimpullCollection {
      */
     private static final void populateCollision(Collision collisionToPopulate) {
 		Vector2f velocity = collisionToPopulate.me.getVelocity();
-		float vdotn = collisionNormal.dot(velocity);
-		collisionToPopulate.vNormal = collisionNormal.mult(vdotn);
-		collisionToPopulate.vTangent = velocity.minus(collisionToPopulate.vNormal);	
+		float vdotn = collisionNormal.x * velocity.x + collisionNormal.y * velocity.y;
+		collisionToPopulate.vNormal = 
+			new Vector2f(collisionNormal.x * vdotn, collisionNormal.y * vdotn);
+		collisionToPopulate.vTangent = 
+			new Vector2f(velocity.x - collisionToPopulate.vNormal.x, velocity.y - collisionToPopulate.vNormal.y);	
     }
 
-    /**
-	 * default test for two non-multisampled particles
-	 */
+    /** default test for two non-multisampled particles */
 	private static final boolean detectCollisionNormVsNorm(Particle particleA, Particle particleB) {
 		particleA.samp.x = particleA.position.x;
 		particleA.samp.y = particleA.position.y;
@@ -447,8 +461,8 @@ public strictfp class SimpullCollection {
 			Vector2f vertex = findClosestVertexOnOBB(circle.samp, obb);
 
 			// get the distance from the closest vertex on rect to circle center
-			collisionNormal = vertex.minus(circle.samp);
-			float mag = collisionNormal.magnitude();
+			collisionNormal = new Vector2f(vertex.x - circle.samp.x, vertex.y - circle.samp.y);
+			float mag = (float)Math.sqrt(collisionNormal.x * collisionNormal.x + collisionNormal.y * collisionNormal.y);
 			collisionDepth = r - mag;
 
 			if (collisionDepth > 0) {
@@ -481,8 +495,8 @@ public strictfp class SimpullCollection {
 		if (depthY == 0) {
 			return false;
 		}
-		collisionNormal = circleA.samp.minus(circleB.samp);
-		float mag = collisionNormal.magnitude();
+		collisionNormal = new Vector2f(circleA.samp.x - circleB.samp.x, circleA.samp.y - circleB.samp.y);
+		float mag = (float)Math.sqrt(collisionNormal.x * collisionNormal.x + collisionNormal.y * collisionNormal.y);
 		collisionDepth = (circleA.getRadius() + circleB.getRadius()) - mag;
 		
 		if (collisionDepth > 0) {
@@ -497,9 +511,7 @@ public strictfp class SimpullCollection {
 		return false;
 	}
 
-	/**
-	 * @return 0 if intervals do not overlap,  smallest depth if they do.
-	 */
+	/** @return 0 if intervals do not overlap,  smallest depth if they do. */
 	private static final float testIntervals(Interval intervalA, Interval intervalB) {
 		if (intervalA.max < intervalB.min) {
 			return 0;
@@ -515,16 +527,18 @@ public strictfp class SimpullCollection {
 	
 	/** @return the location of the closest vertex on obb to point */
  	private static final Vector2f findClosestVertexOnOBB(Vector2f point, Rectangle obb) {
- 		Vector2f d = point.minus(obb.samp);
+ 		Vector2f d = new Vector2f(point.x - obb.samp.x, point.y - obb.samp.y);
  		Vector2f q = new Vector2f(obb.samp.x, obb.samp.y);
-
 		for (int i = 0; i < 2; ++i) {
-			float dist = d.dot(obb.axes[i]);
-
-			if (dist >= 0) dist = obb.extents[i];
-			else if (dist < 0) dist = -obb.extents[i];
-
-			q.plusEquals(obb.axes[i].mult(dist));
+			float dist = d.x * obb.axes[i].x + d.y * obb.axes[i].y;
+			if (dist >= 0) {
+				dist = obb.extents[i];
+			}
+			else if (dist < 0) {
+				dist = -obb.extents[i];
+			}
+			q.x += obb.axes[i].x * dist;
+			q.y += obb.axes[i].y * dist;
 		}
 		return q;
 	}

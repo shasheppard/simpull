@@ -29,65 +29,16 @@
 
 package simpull;
 	
-/** TODO remove most methods from here for performance reasons.
- * Almost all references to these methods have already been removed.
- * The only remaining class to refactor is {@link SimpullCollection}.
- */
 public final strictfp class Vector2f {
 	
 	public float x;
 	public float y;
 
-	public Vector2f() {
-		x = 0f;
-		y = 0f;
-	}
+	public Vector2f() {}
 	
 	public Vector2f(float x, float y) {
 		this.x = x;
 		this.y = y;
-	}
-
-	public float dot(Vector2f vector) {
-		return x * vector.x + y * vector.y;
-	}
-	
-	public float cross(Vector2f v) {
-		return x * v.y - y * v.x;
-	}
-	
-	public Vector2f plus(Vector2f v) {
-		return new Vector2f(x + v.x, y + v.y); 
-	}
-
-	public Vector2f plusEquals(Vector2f v) {
-		x += v.x;
-		y += v.y;
-		return this;
-	}
-	
-	public Vector2f minus(Vector2f v) {
-		return new Vector2f(x - v.x, y - v.y);    
-	}
-
-	public Vector2f minusEquals(Vector2f v) {
-		x -= v.x;
-		y -= v.y;
-		return this;
-	}
-
-	public Vector2f mult(float s) {
-		return new Vector2f(x * s, y * s);
-	}
-
-	public Vector2f multEquals(float s) {
-		x *= s;
-		y *= s;
-		return this;
-	}
-
-	public Vector2f times(Vector2f v) {
-		return new Vector2f(x * v.x, y * v.y);
 	}
 
 	public Vector2f divEquals(float s) {
@@ -97,15 +48,6 @@ public final strictfp class Vector2f {
 		x /= s;
 		y /= s;
 		return this;
-	}
-
-	public float magnitude() {
-		return (float)Math.sqrt(x * x + y * y);
-	}
-
-	public float distance(Vector2f v) {
-		Vector2f delta = this.minus(v);
-		return delta.magnitude();
 	}
 
 	public Vector2f normalize() {
