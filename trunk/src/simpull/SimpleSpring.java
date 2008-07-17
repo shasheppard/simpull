@@ -187,6 +187,9 @@ public strictfp class SimpleSpring implements IConstraint {
 	 * resolved. Values must be between 0.0 and 1.0.
 	 */	
 	public float getFixedEndLimit() {
+		if (collisionParticle == null) {
+			return 0;
+		}
 		return collisionParticle.getFixedEndLimit();
 	}	
 			
@@ -379,16 +382,12 @@ public strictfp class SimpleSpring implements IConstraint {
 			return 1 / ((particle1.getMass() + particle2.getMass()) / 2);  
 		}
 		
-		@Override
-		public strictfp void update(float dt2) {
+		/** called only on collision */
+		void updatePosition()  {
 			// Since the Particle#isFixed() method is removed, and this cannot override what
 			// is returned, we need to update it each iteration
 			isFixed = parent.getFixed();
-			super.update(dt2);
-		}
-		
-		/** called only on collision */
-		void updatePosition()  {
+			
 			Vector2f center = parent.getCenter();
 			position.x = center.x;
 			position.y = center.y;
@@ -504,17 +503,11 @@ public strictfp class SimpleSpring implements IConstraint {
 			return t;
 		}
 		
-		private void setCorners(Rectangle r, int i) {
-			float rx = r.position.x;
-			float ry = r.position.y;
-			
-			Vector2f[] axes = r.getAxes();
-			float[] extents = r.getExtents();
-			
-			float ae0_x = axes[0].x * extents[0];
-			float ae0_y = axes[0].y * extents[0];
-			float ae1_x = axes[1].x * extents[1];
-			float ae1_y = axes[1].y * extents[1];
+		private void setCorners(Rectangle rectangle, int i) {
+			float ae0_x = rectangle.axes[0].x * rectangle.extents[0];
+			float ae0_y = rectangle.axes[0].y * rectangle.extents[0];
+			float ae1_x = rectangle.axes[1].x * rectangle.extents[1];
+			float ae1_y = rectangle.axes[1].y * rectangle.extents[1];
 			
 			float emx = ae0_x - ae1_x;
 			float emy = ae0_y - ae1_y;
@@ -523,41 +516,39 @@ public strictfp class SimpleSpring implements IConstraint {
 			
 			if (i == 0) {
 				// 0 and 1
-				rca.x = rx - epx;
-				rca.y = ry - epy;
-				rcb.x = rx + emx;
-				rcb.y = ry + emy;
+				rca.x = rectangle.position.x - epx;
+				rca.y = rectangle.position.y - epy;
+				rcb.x = rectangle.position.x + emx;
+				rcb.y = rectangle.position.y + emy;
 			} else if (i == 1) {
 				// 1 and 2
-				rca.x = rx + emx;
-				rca.y = ry + emy;
-				rcb.x = rx + epx;
-				rcb.y = ry + epy;
+				rca.x = rectangle.position.x + emx;
+				rca.y = rectangle.position.y + emy;
+				rcb.x = rectangle.position.x + epx;
+				rcb.y = rectangle.position.y + epy;
 			} else if (i == 2) {
 				// 2 and 3
-				rca.x = rx + epx;
-				rca.y = ry + epy;
-				rcb.x = rx - emx;
-				rcb.y = ry - emy;
+				rca.x = rectangle.position.x + epx;
+				rca.y = rectangle.position.y + epy;
+				rcb.x = rectangle.position.x - emx;
+				rcb.y = rectangle.position.y - emy;
 			} else if (i == 3) {
 				// 3 and 0
-				rca.x = rx - emx;
-				rca.y = ry - emy;
-				rcb.x = rx - epx;
-				rcb.y = ry - epy;
+				rca.x = rectangle.position.x - emx;
+				rca.y = rectangle.position.y - emy;
+				rcb.x = rectangle.position.x - epx;
+				rcb.y = rectangle.position.y - epy;
 			}
 		}
 		
 		/** pp1-pq1 will be the collision particle line segment on which we need parameterized s. */
 		private float closestPtSegmentSegment() {
-			Vector2f pp1 = particle1.position;
-			Vector2f pq1= particle2.position;
 			Vector2f pp2= rca;
 			Vector2f pq2 = rcb;
 			
-			Vector2f d1 = new Vector2f(pq1.x - pp1.x, pq1.y - pp1.y);
+			Vector2f d1 = new Vector2f(particle2.position.x - particle1.position.x, particle2.position.y - particle1.position.y);
 			Vector2f d2 = new Vector2f(pq2.x - pp2.x, pq2.y - pp2.y);
-			Vector2f r = new Vector2f(pp1.x - pp2.x, pp1.y - pp2.y);
+			Vector2f r = new Vector2f(particle1.position.x - pp2.x, particle1.position.y - pp2.y);
 		
 			float t;
 			float a = d1.x * d1.x + d1.y * d1.y;
@@ -582,7 +573,7 @@ public strictfp class SimpleSpring implements IConstraint {
 			 	s = MathUtil.clamp((b - c) / a, 0, 1);
 			}
 			 
-			Vector2f c1 = new Vector2f(pp1.x + (d1.x * s), pp1.y + (d1.y * s));
+			Vector2f c1 = new Vector2f(particle1.position.x + (d1.x * s), particle1.position.y + (d1.y * s));
 			Vector2f c2 = new Vector2f(pp2.x + (d2.x * t), pp2.y + (d2.y * t));
 			Vector2f c1minusc2 = new Vector2f(c1.x - c2.x, c1.y - c2.y);
 			return c1minusc2.x * c1minusc2.x + c1minusc2.y * c1minusc2.y;

@@ -31,8 +31,8 @@ package simpull;
 	
 public strictfp class Rectangle extends Particle {
 
-	private float[] extents;
-	private Vector2f[] axes;
+	float[] extents;
+	Vector2f[] axes;
 	
 	private static final float defaultMass = 1f; // FIXME this default is unqualified
 	
@@ -112,14 +112,6 @@ public strictfp class Rectangle extends Particle {
 		return extents[1] * 2;
 	}
 			
-	Vector2f[] getAxes() {
-		return axes;
-	}
-	
-	float[] getExtents() {
-		return extents;
-	}
-	
 	Interval getProjection(Vector2f axis) {
 		float radius =
 			extents[0] * Math.abs(axis.x * axes[0].x + axis.y * axes[0].y)+
