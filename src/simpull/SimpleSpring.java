@@ -215,7 +215,7 @@ public strictfp class SimpleSpring implements IConstraint {
 	
 	/** @return true if both connected particle's isFixed property is true. */
 	public boolean getFixed() {
-		return (particle1.getFixed() && particle2.getFixed());
+		return particle1.isFixed && particle2.isFixed;
 	}
 	
 	/**
@@ -241,7 +241,7 @@ public strictfp class SimpleSpring implements IConstraint {
 	 */		
 	@Override
 	public void resolve() {
-		if (particle1.getFixed() && particle2.getFixed()) {
+		if (particle1.isFixed && particle2.isFixed) {
 			return;
 		}
 		float deltaLength = getCurrLength();			
@@ -297,6 +297,7 @@ public strictfp class SimpleSpring implements IConstraint {
 			avgVelocity = new Vector2f(0,0);
 			
 			this.parent = parent;
+			isFixed = parent.getFixed();
 			this.rectScale = rectScale;
 			this.rectHeight = rectHeight;
 			this.scaleToLength = scaleToLength;
@@ -372,14 +373,18 @@ public strictfp class SimpleSpring implements IConstraint {
 	   /** @return the average inverse mass. */
 		@Override
 		float getInvMass() {
-			if (particle1.getFixed() && particle2.getFixed()) return 0;
+			if (particle1.isFixed && particle2.isFixed) {
+				return 0;
+			}
 			return 1 / ((particle1.getMass() + particle2.getMass()) / 2);  
 		}
 		
-		/** @return the value of the parent {@link SimpleSpring} isFixed property. */
 		@Override
-		public boolean getFixed() {
-			return parent.getFixed();
+		public strictfp void update(float dt2) {
+			// Since the Particle#isFixed() method is removed, and this cannot override what
+			// is returned, we need to update it each iteration
+			isFixed = parent.getFixed();
+			super.update(dt2);
 		}
 		
 		/** called only on collision */
@@ -399,7 +404,9 @@ public strictfp class SimpleSpring implements IConstraint {
 		void respondToCollision(Collision collision, Vector2f mtd, Vector2f velocity, Vector2f n,
 				float d, int o) {
 			addCollisionEvent(collision);
-			if (getFixed() || !collision.you.isSolid()) return;
+			if (getFixed() || !collision.you.isSolid) {
+				return;
+			}
 			
 			float t = getContactPointParam(collision.you);
 			float c1 = (1 - t);
@@ -408,7 +415,7 @@ public strictfp class SimpleSpring implements IConstraint {
 			// if one is fixed then move the other particle the entire way out of 
 			// collision. also, dispose of collisions at the sides of the collision particle. The higher
 			// the fixedEndLimit value, the more of the collision particle not be effected by collision. 
-			if (particle1.getFixed()) {
+			if (particle1.isFixed) {
 				if (c2 <= getFixedEndLimit()) return;
 				lambda.x = mtd.x / c2;
 				lambda.y = mtd.y / c2;
@@ -416,7 +423,7 @@ public strictfp class SimpleSpring implements IConstraint {
 				particle2.position.y += lambda.y;
 				particle2.setVelocity(velocity);
 
-			} else if (particle2.getFixed()) {
+			} else if (particle2.isFixed) {
 				if (c1 <= getFixedEndLimit()) return;
 				lambda.x = mtd.x / c1;
 				lambda.y = mtd.y / c1;

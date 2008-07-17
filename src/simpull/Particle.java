@@ -49,6 +49,32 @@ import simpull.events.sample.Events;
 public strictfp class Particle implements IPhysicsObject, EventParticipator {
 	
 	public Vector2f position;
+	/**
+	 * The fixed state of the particle. If the particle is fixed, it does not move in
+	 * response to forces or collisions. Fixed particles are good for surfaces.
+	 */
+	public boolean isFixed;
+	/**
+	 * Sets the solidity of the item. If an item is not solid, then other items colliding
+	 * with it will not respond to the collision. This property differs from 
+	 * isCollidable in that you can still test for collision events if
+	 * an item's isCollidable property is true and its isSolid
+	 * property is false. 
+	 * 
+	 * The isCollidable property takes precedence over the isSolid
+	 * property if isCollidable is set to false. That is, if isCollidable
+	 * is false, it won't matter if isSolid is set to true or false.
+	 * 
+	 * NOTE: If you don't need to check for collision events, using isCollidable
+	 * is more efficient. Always use isCollidable unless you need to
+	 * handle collision events.
+	 */	
+	public boolean isSolid;
+	/**
+	 * Determines if the particle can collide with other particles or constraints.
+	 * The default state is true.
+	 */
+	public boolean isCollidable;
 
 	Vector2f prevPosition;
 	Vector2f samp;
@@ -65,14 +91,9 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 	private float invMass;
 	private float friction;
 	
-	private boolean isFixed;
-	private boolean isCollidable;
-	
 	private Vector2f center;
 	private int multisample;
 	
-	private boolean isSolid;
-
 	private java.util.Queue<Event> eventQueue = new java.util.concurrent.ConcurrentLinkedQueue<Event>();
 	private Map<String, List<EventHandler>> eventHandlersMap = new HashMap<String, List<EventHandler>>();
 		
@@ -84,25 +105,19 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 			float elasticity,
 			float friction) {
 		interval = new Interval(0,0);
-		
 		position = new Vector2f(x, y);
 		prevPosition = new Vector2f(x, y);
 		samp = new Vector2f();
 		this.isFixed = isFixed;
-		
 		forces = new Vector2f();
-		
 		isCollidable = true;
 		hasFirstCollisionOccurred = false;
-		
 		setMass(mass);
 		setElasticity(elasticity);
 		setFriction(friction);
 		rotation = 0;
-		
 		center = new Vector2f();
 		multisample = 0;
-
 		isSolid = true;
 		EventManager.registerEventParticipator(this);
 	}
@@ -219,18 +234,6 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 	}
 	
 	/**
-	 * The fixed state of the particle. If the particle is fixed, it does not move in
-	 * response to forces or collisions. Fixed particles are good for surfaces.
-	 */
-	public boolean getFixed() {
-		return isFixed;
-	}
-
-	public void setFixed(boolean isFixed) {
-		this.isFixed = isFixed;
-	}
-	
-	/**
 	 * @return a copy of the position of the particle (i.e. changes to the object returned do not reflect).
 	 * You can alter the position of a particle three ways: change its position, set
 	 * its velocity, or apply a force to it. Setting the position of a non-fixed 
@@ -296,18 +299,6 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 	}
 	
 	/**
-	 * Determines if the particle can collide with other particles or constraints.
-	 * The default state is true.
-	 */
-	public boolean isCollidable() {
-		return isCollidable;
-	}
-
-	public void setCollidable(boolean isCollidable) {
-		this.isCollidable = isCollidable;
-	}
-	
-	/**
 	 * Adds a force to the particle. Using this method to a force directly to the
 	 * particle will only apply that force for a single Simpull.step() cycle. 
 	 * 
@@ -358,30 +349,6 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 		hasFirstCollisionOccurred = false;
 	}
 	
-	/**
-	 * Sets the solidity of the item. If an item is not solid, then other items colliding
-	 * with it will not respond to the collision. This property differs from 
-	 * isCollidable in that you can still test for collision events if
-	 * an item's isCollidable property is true and its isSolid
-	 * property is false. 
-	 * 
-	 * The isCollidable property takes precedence over the isSolid
-	 * property if isCollidable is set to false. That is, if isCollidable
-	 * is false, it won't matter if isSolid is set to true or false.
-	 * 
-	 * NOTE: If you don't need to check for collision events, using isCollidable
-	 * is more efficient. Always use isCollidable unless you need to
-	 * handle collision events.
-	 */	
-	public boolean isSolid() {
-		return isSolid;
-	}
-	
-	public void setSolid(boolean isSolid) {
-		this.isSolid = isSolid;
-	}
-
-
 	@Override
 	@SuppressWarnings("unchecked")
 	public boolean eventAttemptNotify(Event event) {
@@ -453,14 +420,13 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 	void respondToCollision(Collision collision, Vector2f mtd, Vector2f velocity, Vector2f n,
 			float d, int o) {
 		addCollisionEvent(collision);
-		if (getFixed() || !isSolid() || !collision.you.isSolid()) {
+		if (isFixed || !isSolid || !collision.you.isSolid) {
 			return;
 		}
 		position.x = samp.x + mtd.x;
 		position.y = samp.y + mtd.y;
 		setVelocity(velocity);
 	}
-	
 	
 	void addCollisionEvent(Collision collision) {		
 		eventAttemptNotify(new Events.CollisionEvent(collision));
@@ -472,7 +438,7 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 	}
 	
 	float getInvMass() {
-		return getFixed() ? 0 : invMass; 
+		return isFixed ? 0 : invMass; 
 	}
 	
 }	

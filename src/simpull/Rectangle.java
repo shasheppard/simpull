@@ -34,7 +34,7 @@ public strictfp class Rectangle extends Particle {
 	private float[] extents;
 	private Vector2f[] axes;
 	
-	private static final float defaultMass = 0.6f; // FIXME this default is unqualified
+	private static final float defaultMass = 1f; // FIXME this default is unqualified
 	
 	/**
 	 * @param x The initial x position.
@@ -48,10 +48,9 @@ public strictfp class Rectangle extends Particle {
 	 * @param mass The mass of the particle
 	 * @param elasticity The elasticity of the particle. Higher values mean more elasticity.
 	 * @param friction The surface friction of the particle. 
-	 * <p>
-	 * Note that RectangleParticles can be fixed but still have their rotation property 
+
+	 * Note that a {@link Rectangle} can be fixed and still have the rotation property 
 	 * changed.
-	 * </p>
 	 */
 	public Rectangle (
 			float x, 
@@ -63,9 +62,7 @@ public strictfp class Rectangle extends Particle {
 			float mass/*= 1*/, 
 			float elasticity/*= 0.3*/,
 			float friction/*= 0*/) {
-		
 		super(x, y, isFixed, mass, elasticity, friction);
-		
 		extents = new float[] {width/2, height/2};
 		axes = new Vector2f[] {new Vector2f(0,0), new Vector2f(0,0)};
 		setRotation(rotation);

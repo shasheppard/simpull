@@ -149,13 +149,13 @@ public strictfp class SimpullCollection {
 		int numParticles = particles.size();
 		for (int j = 0; j < numParticles; ++j) {
 			Particle jParticle = particles.get(j);
-			if (!jParticle.isCollidable()) {
+			if (!jParticle.isCollidable) {
 				continue;
 			}
 			// check against every other particle in this Collection
 			for (int i = j + 1; i < numParticles; ++i) {
 				Particle iParticle = particles.get(i);
-				if (iParticle.isCollidable()) {
+				if (iParticle.isCollidable) {
 					detectCollisionDelegate(jParticle, iParticle);
 				}
 			}
@@ -175,12 +175,12 @@ public strictfp class SimpullCollection {
 
 	void checkCollisionsVsCollection(SimpullCollection otherCollection) {
 		for (Particle myParticle : particles) {
-			if (!myParticle.isCollidable()) {
+			if (!myParticle.isCollidable) {
 				continue;
 			}
 			// check against every particle in the other collection
 			for (Particle otherParticle : otherCollection.particles) {
-				if (otherParticle.isCollidable()) {
+				if (otherParticle.isCollidable) {
 					detectCollisionDelegate(myParticle, otherParticle);
 				}
 			}
@@ -204,7 +204,7 @@ public strictfp class SimpullCollection {
 				}
 				// check against every particle in the other collection
 				for (Particle otherParticle : otherCollection.particles) {
-					if (otherParticle.isCollidable() && !mySpring.isConnectedTo(otherParticle)) {
+					if (otherParticle.isCollidable && !mySpring.isConnectedTo(otherParticle)) {
 						mySpring.getCollisionParticle().updatePosition();
 						detectCollisionDelegate(otherParticle, mySpring.getCollisionParticle());
 					}
@@ -218,7 +218,7 @@ public strictfp class SimpullCollection {
 	 * based on particle multisampling values.
 	 */	
 	private static final void detectCollisionDelegate(Particle particleA, Particle particleB) {
-		if (particleA.getFixed() && particleB.getFixed()) {
+		if (particleA.isFixed && particleB.isFixed) {
 			return;
 		}
 		if (particleA.getMultisample() == 0 
@@ -414,8 +414,8 @@ public strictfp class SimpullCollection {
 	}		
 
 	/**
-	 * Tests the collision between a RectangleParticle (aka an OBB) and a 
-	 * CircleParticle. If there is a collision it determines its axis and depth, and 
+	 * Tests the collision between a {@link Rectangle} (aka an OBB) and a 
+	 * {@link Circle}. If there is a collision it determines its axis and depth, and 
 	 * then passes it off to the CollisionResolver.
 	 */
 	private static final boolean testCollisionOBBvsCircle(Rectangle obb, Circle circle) {
@@ -464,9 +464,8 @@ public strictfp class SimpullCollection {
 	}
 
 	/**
-	 * Tests the collision between two CircleParticles. If there is a collision it 
-	 * determines its axis and depth, and then passes it off to the CollisionResolver
-	 * for handling.
+	 * Tests the collision between two {@link Circle}. If there is a collision it 
+	 * determines its axis and depth.
 	 */	
 	private static final boolean testCollisionCirclevsCircle(Circle circleA, Circle circleB) {
 		float depthX = testIntervals(circleA.getIntervalX(), circleB.getIntervalX());
@@ -509,9 +508,7 @@ public strictfp class SimpullCollection {
 		return (Math.abs(lenA) < Math.abs(lenB)) ? lenA : lenB;
 	}
 	
-	/**
-	 * @return the location of the closest vertex on obb to point
-	 */
+	/** @return the location of the closest vertex on obb to point */
  	private static final Vector2f findClosestVertexOnOBB(Vector2f point, Rectangle obb) {
  		Vector2f d = point.minus(obb.samp);
  		Vector2f q = new Vector2f(obb.samp.x, obb.samp.y);

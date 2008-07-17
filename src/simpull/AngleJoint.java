@@ -96,9 +96,9 @@ public strictfp class AngleJoint extends SimpleSpring {
 	/** @return true if any connected particle's isFixed property is true. */
 	@Override
 	public boolean getFixed() {
-		return particle1.getFixed()
-				&& particle2.getFixed()
-				&& particle3.getFixed();
+		return particle1.isFixed
+				&& particle2.isFixed
+				&& particle3.isFixed;
 	}
 	
 	@Override
