@@ -13,8 +13,14 @@ import simpull.Composite.Finisher;
  */
 public final class CustomBodyFinisher implements Finisher {
 	
-	public static final CustomBodyFinisher instance = new CustomBodyFinisher();
+	private float bodyConstraintThickness;
+	private float bodyConstraintRectScale;
 
+	public CustomBodyFinisher(float bodyConstraintThickness, float bodyConstraintRectScale) {
+		this.bodyConstraintThickness = bodyConstraintThickness;
+		this.bodyConstraintRectScale = bodyConstraintRectScale;
+	}
+	
 	@Override
 	public void finish(Composite composite) {
 		List<Particle> particles = composite.getParticles();
@@ -23,7 +29,14 @@ public final class CustomBodyFinisher implements Finisher {
 		// These spring will be collidable
 		for (int i = 0; i < size; ++i) {
 			int endIdx = (i + 1) == size ? 0 : (i + 1); // wrap around to the first particle when on the last one added.
-			SimpleSpring connector = new SimpleSpring(particles.get(i), particles.get(endIdx), 1f, true, 1f, 1f, false);
+			SimpleSpring connector = new SimpleSpring(
+					particles.get(i), 
+					particles.get(endIdx), 
+					1f, 
+					true, 
+					bodyConstraintThickness, 
+					bodyConstraintRectScale, 
+					false);
 			composite.add(connector);
 		}
 		
@@ -44,7 +57,5 @@ public final class CustomBodyFinisher implements Finisher {
 			}
 		}
 	}
-	
-	private CustomBodyFinisher() {}
 	
 }

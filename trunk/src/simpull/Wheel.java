@@ -36,9 +36,9 @@ package simpull;
 public strictfp class Wheel extends Circle {
 
 	private Rim rim;
-	private Vector2f tan;	
-	private Vector2f normSlip;
-	private Vector2f orientation;
+	private Vector2f tan = new Vector2f();	
+	private Vector2f normSlip = new Vector2f();
+	private Vector2f orientation = new Vector2f();
 	private float traction;
 
 	/**
@@ -63,12 +63,8 @@ public strictfp class Wheel extends Circle {
 			float friction/*= 0*/,
 			float traction/*= 1*/) {
 		super(x,y,radius,isFixed, mass, elasticity, friction);
-		tan = new Vector2f(0,0);
-		normSlip = new Vector2f(0,0);
 		rim = new Rim(radius, 2); 	
-		
 		setTraction(traction);
-		orientation = new Vector2f();
 	}	
 
 	/**
@@ -133,17 +129,15 @@ public strictfp class Wheel extends Circle {
 	}
 
 	@Override
-	void respondToCollision(Collision collision, Vector2f mtd, Vector2f velocity, Vector2f n,
-			float d, int o) {
-		super.respondToCollision(collision, mtd, velocity, n, d, o);
-		int sign = MathUtil.sign(d * o);
-		Vector2f surfaceNormal = new Vector2f(n.x * sign, n.y * sign);
+	void respondToCollision(Collision collision, Vector2f mtd, Vector2f velocity, Vector2f normal,
+			float depth, int order) {
+		super.respondToCollision(collision, mtd, velocity, normal, depth, order);
+		int sign = MathUtil.sign(depth * order);
+		Vector2f surfaceNormal = new Vector2f(normal.x * sign, normal.y * sign);
 		resolve(surfaceNormal);
 	}
 	
-	/**
-	 * Simulates torque/wheel-ground interaction
-	 */
+	/** Simulates torque/wheel-ground interaction */
 	private void resolve(Vector2f surfaceNormal) {
 		// this is the tangent vector at the rim particle
 		tan.x = -rim.position.y;
@@ -162,7 +156,7 @@ public strictfp class Wheel extends Circle {
 		Vector2f combinedVelocity = 
 			new Vector2f(velocity.x + wheelSurfaceVelocity.x, velocity.y + wheelSurfaceVelocity.y);
 	
-		// the wheel's comb velocity projected onto the contact normal
+		// the wheel's combined velocity projected onto the contact normal
 		float cp = combinedVelocity.x * surfaceNormal.y - combinedVelocity.y * surfaceNormal.x;
 
 		// set the wheel's spin speed to track the ground
@@ -189,6 +183,7 @@ public strictfp class Wheel extends Circle {
 	strictfp class Rim {
 		Vector2f position;
 		Vector2f prevPosition;
+		Vector2f tan = new Vector2f();
 
 		private float wheelRadius;
 		private float angularVelocity;
@@ -229,24 +224,24 @@ public strictfp class Wheel extends Circle {
 
 			//apply torque
 			//this is the tangent vector at the rim particle
-			float dx = -position.y;
-			float dy =  position.x;
+			tan.x = -position.y;
+			tan.y =  position.x;
 
 			//normalize so we can scale by the rotational speed
-			float len = (float)Math.sqrt(dx * dx + dy * dy);
-			dx /= len;
-			dy /= len;
+			float len = (float)Math.sqrt(tan.x * tan.x + tan.y * tan.y);
+			tan.x /= len;
+			tan.y /= len;
 
-			position.x += speed * dx;
-			position.y += speed * dy;		
+			position.x += speed * tan.x;
+			position.y += speed * tan.y;
 
-			float ox = prevPosition.x;
-			float oy = prevPosition.y;
-			float px = prevPosition.x = position.x;		
-			float py = prevPosition.y = position.y;		
-			
-			position.x += Simpull.damping * (px - ox);
-			position.y += Simpull.damping * (py - oy);	
+			float prevX = prevPosition.x;
+			float prevY = prevPosition.y;
+			float x = prevPosition.x = position.x;
+			float y = prevPosition.y = position.y;
+			// Set position using the velocity multiplied by the damping
+			position.x += Simpull.damping * (x - prevX);
+			position.y += Simpull.damping * (y - prevY);	
 
 			// hold the rim particle in place
 			float clen = (float)Math.sqrt(position.x * position.x + position.y * position.y);

@@ -77,17 +77,17 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	 * @param mass the total mass of the {@link Composite}, distributed among all {@link IPhysicsObject} added
 	 */
 	public Composite(boolean isFixed, float mass) {
-		centerParticle = new Particle(0, 0, false, mass, 0f, 0f);
+		centerParticle = new Particle(0, 0, isFixed, mass, 0f, 0f);
 		this.mass = mass;
 		calculateCenterPoint = true;
-		centerParticle.setCollidable(false);
+		centerParticle.isCollidable = false;
 	}
 	
 	public Composite(float centerX, float centerY, boolean isFixed, float mass) {
-		centerParticle = new Particle(centerX, centerY, false, mass, 0f, 0f);
+		centerParticle = new Particle(centerX, centerY, isFixed, mass, 0f, 0f);
 		this.mass = mass;
 		calculateCenterPoint = false;
-		centerParticle.setCollidable(false);
+		centerParticle.isCollidable = false;
 	}
 	
 	/**
@@ -174,7 +174,7 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	/** @return the fixed state of the Composite. */	
 	public boolean getFixed() {
 		for (Particle particle : particles) {
-			if (!particle.getFixed()) {
+			if (!particle.isFixed) {
 				return false;	
 			}
 		}
@@ -188,7 +188,7 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	 */	
 	public void setFixed(boolean isFixed) {
 		for (Particle particle : particles) {
-			particle.setFixed(isFixed);	
+			particle.isFixed = isFixed;	
 		}
 	}
 	
