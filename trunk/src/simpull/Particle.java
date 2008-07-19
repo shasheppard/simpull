@@ -77,21 +77,21 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 	public boolean isCollidable;
 
 	Vector2f prevPosition;
-	Vector2f samp;
+	Vector2f samp = new Vector2f();
 	Interval interval;
 	
 	private float rotation;
 	private float mass;
 
 	/** The forces acting on the particle */
-	private Vector2f forces;
+	private Vector2f forces = new Vector2f();
 	private boolean hasFirstCollisionOccurred;
 			
 	private float elasticity;
 	private float invMass;
 	private float friction;
 	
-	private Vector2f center;
+	private Vector2f center = new Vector2f();
 	private int multisample;
 	
 	private java.util.Queue<Event> eventQueue = new java.util.concurrent.ConcurrentLinkedQueue<Event>();
@@ -107,16 +107,13 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 		interval = new Interval(0,0);
 		position = new Vector2f(x, y);
 		prevPosition = new Vector2f(x, y);
-		samp = new Vector2f();
 		this.isFixed = isFixed;
-		forces = new Vector2f();
 		isCollidable = true;
 		hasFirstCollisionOccurred = false;
 		setMass(mass);
 		setElasticity(elasticity);
 		setFriction(friction);
 		rotation = 0;
-		center = new Vector2f();
 		multisample = 0;
 		isSolid = true;
 		EventManager.registerEventParticipator(this);

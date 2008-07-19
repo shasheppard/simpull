@@ -169,8 +169,9 @@ public strictfp class SimpullCollection {
 				if (constraint instanceof SimpleSpring) { // TODO This if was not here, so are we now missing something???
 					SimpleSpring spring = (SimpleSpring)constraint;
 					if (spring.isCollidable() && !spring.isConnectedTo(jParticle)) {
-						spring.getCollisionParticle().updatePosition();
-						detectCollisionDelegate(jParticle, spring.getCollisionParticle());
+						tmpCollisionParticle = spring.getCollisionParticle();
+						tmpCollisionParticle.updatePosition();
+						detectCollisionDelegate(jParticle, tmpCollisionParticle);
 					}
 				}
 			}
@@ -349,11 +350,9 @@ public strictfp class SimpullCollection {
 		}
 	}
 
-	/**
-	 * Tests two particles where both are of equal multisample rate
-	 */		
+	/** Tests two particles where both are of equal multisample rate */		
 	private static final void detectCollisionSampVsSamp(Particle particleA, Particle particleB) {
-		if (detectCollisionNormVsNorm(particleA,particleB)) {
+		if (detectCollisionNormVsNorm(particleA, particleB)) {
 			return;
 		}
 		float s = 1 / (particleA.getMultisample() + 1); 
@@ -446,8 +445,9 @@ public strictfp class SimpullCollection {
 			Vector2f boxAxis = obb.axes[i];
 			float depth = testIntervals(
 					obb.getProjection(boxAxis), circle.getProjection(boxAxis));
-			if (depth == 0) return false;
-
+			if (depth == 0) {
+				return false;
+			}
 			if (Math.abs(depth) < Math.abs(collisionDepth)) {
 				collisionNormal = boxAxis;
 				collisionDepth = depth;
@@ -456,14 +456,14 @@ public strictfp class SimpullCollection {
 		}	
 		
 		// determine if the circle's center is in a vertex region
-		float r = circle.getRadius();
-		if (Math.abs(depths[0]) < r && Math.abs(depths[1]) < r) {
+		float radius = circle.getRadius();
+		if (Math.abs(depths[0]) < radius && Math.abs(depths[1]) < radius) {
 			Vector2f vertex = findClosestVertexOnOBB(circle.samp, obb);
 
 			// get the distance from the closest vertex on rect to circle center
 			collisionNormal = new Vector2f(vertex.x - circle.samp.x, vertex.y - circle.samp.y);
 			float mag = (float)Math.sqrt(collisionNormal.x * collisionNormal.x + collisionNormal.y * collisionNormal.y);
-			collisionDepth = r - mag;
+			collisionDepth = radius - mag;
 
 			if (collisionDepth > 0) {
 				// there is a collision in one of the vertex regions

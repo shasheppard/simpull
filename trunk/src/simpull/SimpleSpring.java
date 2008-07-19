@@ -273,12 +273,12 @@ public strictfp class SimpleSpring implements IConstraint {
 		private Particle particle1;
 		private Particle particle2;
 		
-		private Vector2f avgVelocity;
-		private Vector2f lambda;
+		private Vector2f avgVelocity = new Vector2f();
+		private Vector2f lambda = new Vector2f();
 		private boolean scaleToLength;
 		
-		private Vector2f rca;
-		private Vector2f rcb;
+		private Vector2f rca = new Vector2f();
+		private Vector2f rcb = new Vector2f();
 		private float s;
 		
 		private float rectScale;
@@ -295,19 +295,12 @@ public strictfp class SimpleSpring implements IConstraint {
 			super(0,0,0,0,0,false);
 			this.particle1 = particle1;
 			this.particle2 = particle2;
-			
-			lambda = new Vector2f(0,0);
-			avgVelocity = new Vector2f(0,0);
-			
 			this.parent = parent;
 			isFixed = parent.getFixed();
 			this.rectScale = rectScale;
 			this.rectHeight = rectHeight;
 			this.scaleToLength = scaleToLength;
-			
 			fixedEndLimit = 0;
-			rca = new Vector2f();
-			rcb = new Vector2f();
 		}
 		
 		void setRectScale(float s) {
