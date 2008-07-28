@@ -87,10 +87,10 @@ public strictfp class AngleJoint extends SimpleSpring {
 	 * Returns true if the passed particle is one of the three particles attached to this AngularConstraint.
 	 */		
 	@Override
-	public boolean isConnectedTo(Particle particle) {
-		return particle == particle1
-				|| particle == particle2
-				|| particle == particle3;
+	public boolean isConnectedTo(IPhysicsObject other) {
+		return other == particle1
+				|| other == particle2
+				|| other == particle3;
 	}		
 	
 	/** @return true if any connected particle's isFixed property is true. */

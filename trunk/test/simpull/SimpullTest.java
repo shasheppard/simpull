@@ -77,7 +77,7 @@ public class SimpullTest extends JFrame implements KeyListener {
 		}
 		
 		{ // star 
-			star = new Composite(false, 8);
+			star = new Composite(false, 8, true);
 			// The top-left point of the star is (710, 10), so I got the points
 			// on the start from the image creation software and added the reference 
 			// location to get a good physical representation...cool trick!
@@ -94,7 +94,7 @@ public class SimpullTest extends JFrame implements KeyListener {
 		}
 		
 		{ // The tumbler
-			tumbler = new Composite(true, 20);
+			tumbler = new Composite(true, 20, true);
 			tumbler.add(new Circle(50, 10, 4, false, 1, 0.3f, 0));
 			tumbler.add(new Circle(150, 10, 4, false, 1, 0.3f, 0));
 			tumbler.add(new Circle(100, 60, 4, false, 1, 0.3f, 0));

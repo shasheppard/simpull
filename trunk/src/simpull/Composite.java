@@ -59,6 +59,7 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	private static final String ALREADY_COMPLETE_MESSAGE = "Cannot mark a Composite as complete that is already marked complete.";
 	private static final String CANNOT_ADD_INCOMPLETE_MESSAGE = "Cannot add a Composite that is not marked complete.";
 	private static final String CANNOT_ADD_PARENTED_MESSAGE = "Cannot add a Composite that has already been added to another Composite.";
+	private static final String NO_CONNECTION_TO_CENTER_MESSAGE = "Cannont mark a Composite as complete that does not have any connection to the center particle.";
 	
 	private List<Composite> composites = new ArrayList<Composite>();
 	private Composite parentComposite;
@@ -69,21 +70,39 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	/** When no coordinates are given, the center point will be calculated based on the layout of the particles added */
 	private boolean calculateCenterPoint;
 	private float mass;
+	private boolean autoConnectParticlesToCenter;
 	
 	/**
 	 * The center position of this object will be determined and set when all components are 
 	 * added and {@link Composite#setCompositeCompleted(boolean)} is called.  
-	 * @param isFixed
+	 * @param isFixed determines if the center point is fixed position or not
 	 * @param mass the total mass of the {@link Composite}, distributed among all {@link IPhysicsObject} added
+	 * @param autoConnectParticlesToCenter true if you want to automatically have the center point connected
+	 * 		to each particle added during {@link #setCompositeCompleted(simpull.Composite.Finisher...)}
+	 * 		via a {@link SimpleSpring}, false will get no such auto addition of connectors to center, but beware
+	 * 		that in order for a {@link Composite} to function as expected some connections to the center must be made
+	 * 		manually before {@link #setCompositeCompleted(simpull.Composite.Finisher...)} is called.
 	 */
-	public Composite(boolean isFixed, float mass) {
+	public Composite(boolean isFixed, float mass, boolean autoConnectParticlesToCenter) {
 		centerParticle = new Particle(0, 0, isFixed, mass, 0f, 0f);
 		this.mass = mass;
 		calculateCenterPoint = true;
 		centerParticle.isCollidable = false;
 	}
 	
-	public Composite(float centerX, float centerY, boolean isFixed, float mass) {
+	/**
+	 * 
+	 * @param isFixed determines if the center point is fixed position or not
+	 * @param mass the total mass of the {@link Composite}, distributed among all {@link IPhysicsObject} added
+	 * @param autoConnectParticlesToCenter true if you want to automatically have the center point connected
+	 * 		to each particle added during {@link #setCompositeCompleted(simpull.Composite.Finisher...)}
+	 * 		via a {@link SimpleSpring}, false will get no such auto addition of connectors to center, but beware
+	 * 		that in order for a {@link Composite} to function as expected some connections to the center must be made
+	 * 		manually before {@link #setCompositeCompleted(simpull.Composite.Finisher...)} is called.
+	 * @param centerX the non-derived x value of the center particle of this composite
+	 * @param centerY the non-derived y value of the center particle of this composite
+	 */
+	public Composite(boolean isFixed, float mass, boolean autoConnectParticlesToCenter, float centerX, float centerY) {
 		centerParticle = new Particle(centerX, centerY, isFixed, mass, 0f, 0f);
 		this.mass = mass;
 		calculateCenterPoint = false;
@@ -366,9 +385,23 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 		}
 		// Just have to set this in order to keep the velocity at 0, b/c this sets the prevPosition...thus, keeps the velocity at 0
 		centerParticle.setPosition(centerParticle.position.x, centerParticle.position.y);
-		for (Particle particle : particles) {
-			SimpleSpring connectorToCenter = new SimpleSpring(centerParticle, particle, 1f, false, 1f, 1f, false);
-			add(connectorToCenter);
+		if (autoConnectParticlesToCenter) {
+			for (Particle particle : particles) {
+				SimpleSpring connectorToCenter = new SimpleSpring(centerParticle, particle, 1f, false, 1f, 1f, false);
+				add(connectorToCenter);
+			}
+		} else {
+			// Check that at least one constraint has a connection to the center point
+			boolean hasConnectionToCenter = false;
+			for (IConstraint constraint : constraints) {
+				if (constraint.isConnectedTo(centerParticle)) {
+					hasConnectionToCenter = true;
+					break;
+				}
+			}
+			if (!hasConnectionToCenter) {
+				throw new IllegalStateException(NO_CONNECTION_TO_CENTER_MESSAGE);
+			}
 		}
 	}
 	
