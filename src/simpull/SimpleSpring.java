@@ -211,9 +211,10 @@ public strictfp class SimpleSpring implements IConstraint {
 		// FIXME: There is no call to collisionParticle.init() like there is when a constraint is added to a group and therefore some things will not work 
 	}
 	
-	/** @return true if the passed particle is one of the two particles attached */		
-	public boolean isConnectedTo(Particle particle) {
-		return (particle == particle1 || particle == particle2);
+	/** @return true if the passed particle is one of the two particles attached */
+	@Override
+	public boolean isConnectedTo(IPhysicsObject other) {
+		return (other == particle1 || other == particle2);
 	}
 	
 	/** @return true if both connected particle's isFixed property is true. */

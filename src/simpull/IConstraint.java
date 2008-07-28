@@ -38,5 +38,7 @@ public interface IConstraint extends IPhysicsObject {
 	public void resolve();
 	
 	public boolean isCollidable();
+	
+	public boolean isConnectedTo(IPhysicsObject other);
 
 }
