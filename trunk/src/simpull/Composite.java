@@ -86,6 +86,7 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	public Composite(boolean isFixed, float mass, boolean autoConnectParticlesToCenter) {
 		centerParticle = new Particle(0, 0, isFixed, mass, 0f, 0f);
 		this.mass = mass;
+		this.autoConnectParticlesToCenter = autoConnectParticlesToCenter;
 		calculateCenterPoint = true;
 		centerParticle.isCollidable = false;
 	}
@@ -105,6 +106,7 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	public Composite(boolean isFixed, float mass, boolean autoConnectParticlesToCenter, float centerX, float centerY) {
 		centerParticle = new Particle(centerX, centerY, isFixed, mass, 0f, 0f);
 		this.mass = mass;
+		this.autoConnectParticlesToCenter = autoConnectParticlesToCenter;
 		calculateCenterPoint = false;
 		centerParticle.isCollidable = false;
 	}
