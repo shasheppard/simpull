@@ -70,6 +70,8 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	/** When no coordinates are given, the center point will be calculated based on the layout of the particles added */
 	private boolean calculateCenterPoint;
 	private float mass;
+	/** center particle will be 5% of total mass */
+	private float centerPercentageOfTotalMass = 0.05f;
 	private boolean autoConnectParticlesToCenter;
 	
 	/**
@@ -152,17 +154,25 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 		this.angularVelocity = angularVelocity;
 	}
 	
+	public float getAngularVelocity() {
+		return angularVelocity;
+	}
+	
 	public void setElasticity(float elasticity) {
-		// TODO Distribute
+		for (Particle particle : particles) {
+			particle.setElasticity(elasticity);
+		}
 	}
 
 	public void setFriction(float friction) {
-		// TODO Distribute
+		for (Particle particle : particles) {
+			particle.setFriction(friction);
+		}
 	}
 
 	/**
 	 * Distributes the mass passed throughout each particle in this collection.
-	 * The center particle is assigned the exact value passed in.
+	 * The center particle is assigned a percentage based on the value of the centerPercentageOfTotalMass property.
 	 * @param mass
 	 */
 	public void setMass(float mass) {
@@ -171,7 +181,7 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 		for (Particle particle : particles) {
 			massSum += particle.getMass();
 		}
-		float centerMass = mass / (float)particles.size();
+		float centerMass = mass * centerPercentageOfTotalMass;
 		float nonCenterMass = mass - centerMass;
 		for (Particle particle : particles) {
 			particle.setMass((particle.getMass() / massSum) * nonCenterMass);
@@ -182,9 +192,40 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	public float getMass() {
 		return mass;
 	}
+	
+	/** @return the calculated (now) distance from the center particle to the particle farthest from it. */
+	public float getLargestRadius() {
+		float largestRadius = Float.MIN_VALUE;
+		for (Particle particle : particles) {
+			Vector2f diff = new Vector2f(particle.position.x - centerParticle.position.x, particle.position.y - centerParticle.position.y);
+			float radius = (float)Math.sqrt(diff.x * diff.x + diff.y * diff.y);
+			if (radius > largestRadius) {
+				largestRadius = radius;
+			}
+		}
+		return largestRadius;
+	}
+	
+	/**
+	 * Set the percentage of the total mass the center particle is.
+	 * Additionally, the mass of all particles is changed to account for this change.
+	 * @param centerPercentageOfTotalMass 0.05f is the default of 5%
+	 */
+	public void setCenterPercentageOfTotalMass(float centerPercentageOfTotalMass) {
+		this.centerPercentageOfTotalMass = centerPercentageOfTotalMass;
+		setMass(mass);
+	}
+	
+	public float getCenterPercentageOfTotalMass() {
+		return centerPercentageOfTotalMass;
+	}
 
+	/**
+	 * Get the rotation of the composite as a whole using the original 
+	 * orientation of all particles as the reference point for 0.
+	 * @return
+	 */
 	public float getRotation() {
-		// TODO make sure this is in the range 0 - 2pi
 		return getRelativeAngle(centerParticle.position, firstParticleAdded.position) - initialReferenceRotation;
 	}
 
