@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="app" default="usage" basedir=".">
+    <description>Application Build File</description>
+
+    <target name="jar" depends="clean,build-jar,clean-build-files"/>
+
+    <target name="build-jar" depends="compile-src">
+        <tstamp>
+            <format property="TIMESTAMP" pattern="MMddyyyy-HHmm"/>
+        </tstamp>
+	<jar destfile="${build.dir}/${jar.file}-0.9.jar">
+            <fileset dir="${build.dir}/dist" excludes="*.properties"/>
+        </jar>       
+    </target>
+
+	<!-- SETUP -->
+    <property environment="env" />
+    <property name="build.sysclasspath" value="ignore"/>
+    <property file="./build.properties" />
+    <property file="./ant/base-build.properties" />
+    <property name="javadocWindowTitle" location="${app.name} API"/>
+
+    <path id="project.classpath">
+	    <pathelement path="${src.dir}" />
+    </path>
+
+	<target name="init">
+		<mkdir dir="${build.dir}" />
+        <echo>All output will go to the build directory: ${build.dir}</echo>
+	</target>
+
+	<!-- COMPILE TARGETS -->
+	<target name="compile-src">
+		<delete dir="${build.dir}/dist" includeEmptyDirs="true" />
+		<mkdir dir="${build.dir}/dist" />
+		<javac srcdir="${src.dir}" destdir="${build.dir}/dist" debug="on" deprecation="on" source="${src.level}">
+			<classpath refid="project.classpath" />
+		</javac>
+		<copy todir="${build.dir}/dist">
+            <fileset dir="${src.dir}" includes="**/*" excludes="**/*.java" />
+		</copy>
+        <!--
+		<java classname="mil.af.ilss.suidm.util.gen.Main">
+			<arg value="-h"/>
+			<classpath location="${build.dir}/dist" />
+       	</java>
+        -->
+	</target>
+
+    <!-- JAVADOC TARGETS -->
+    <target name="javadoc-build">
+        <mkdir dir="${javadoc.dir}"/>
+        <javadoc destdir="${javadoc.dir}" source="${src.level}">
+            <fileset dir="${src.dir}" includes="**/*.java" />
+        </javadoc>
+    </target>
+    
+    <!-- PROJECT REPORTS -->
+	<!--
+    <target name="pmd">
+      <taskdef name="pmd" classname="net.sourceforge.pmd.ant.PMDTask"/>
+      <pmd rulesetfiles="basic" shortFilenames="true">
+          <formatter type="html" toFile="pmd_report.html" linkPrefix="http://pmd.sourceforge.net/xref/"/>
+          <fileset dir="${env.JAVA_HOME}/src/">
+              <include name="java/lang/*.java"/>
+          </fileset>
+      </pmd>
+    </target>
+    -->
+
+    <!-- CLEANUP TARGETS -->
+    <target name="clean-build-files">
+		<delete dir="${build.dir}/dist" />
+    </target>
+
+	<!-- PROJECT MAIN TARGETS -->
+	<target name="clean">
+		<delete dir="${build.dir}" includeEmptyDirs="true" />
+	</target>
+    <target name="compile" depends="clean, init, compile-src"/>
+    <target name="javadoc" depends="compile,javadoc-build"/>
+    <target name="dist" depends="clean, init, javadoc, clean-build-files">
+        <echo>Not Implemented. Override this target to build a distribution</echo>
+        <echo> called after: clean, init, javadoc</echo>
+    </target>
+    <target name="usage">
+        <echo>=== BASE TARGETS ===</echo>
+		<echo>clean - removes the build directory</echo>
+		<echo>compile - compiles source source</echo>
+		<echo>javadoc - generates javadocs</echo>
+        <echo>deploy - fully removes and installs application on tomcat</echo>
+        <echo>full - performs build, ear, javadoc, and deployment</echo>
+        <echo>=== OVERRIDE TARGETS ===</echo>
+        <echo>dist - builds the distribution cd</echo>
+	</target>
+
+</project>
