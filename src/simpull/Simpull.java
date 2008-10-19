@@ -30,13 +30,10 @@
 package simpull;
 	
 import java.util.ArrayList;
-import java.util.List;
 
 import simpull.events.EventManager;
 
-/**
- * The main engine class of simpull. 
- */
+/** The main engine class of simpull. */
 public final class Simpull {
 	
 	/**
@@ -49,12 +46,12 @@ public final class Simpull {
 	 * 
 	 * The damping value. Values should be >=0 and <=1.
 	 */
-	public static float damping;
+	public static int damping;
 	
-	static List<IForce> forces;
+	static ArrayList<IForce> forces;
 		
-	private static List<Group> groups;
-	private static float timeStep;
+	private static ArrayList<Group> groups;
+	private static int timeStep;
 	
 	private static int constraintCycles;
 	private static int constraintCollisionCycles;
@@ -73,13 +70,14 @@ public final class Simpull {
 	 * forces added to particles. If you do not add any forces, the engineTimeStep will not
 	 * matter.
 	 */
-	public static void init(float engineTimeStep/*= 0.25*/) {
-		timeStep = engineTimeStep * engineTimeStep;
+	public static void init(int engineTimeStep/*= 0.25*/) {
+		timeStep = (int) (((long) engineTimeStep * engineTimeStep) >> FP.FRACTION_BITS);
+		// above replaces timeStep = engineTimeStep * engineTimeStep;
 		
 		groups = new ArrayList<Group>();
 		forces = new ArrayList<IForce>();
 		
-		damping = 1;
+		damping = FP.ONE;
 		constraintCycles = 0;
 		constraintCollisionCycles = 1;
 	}

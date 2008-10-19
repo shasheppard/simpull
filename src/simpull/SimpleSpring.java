@@ -29,16 +29,14 @@
 
 package simpull;
 	
-/**
- * A Spring-like constraint that connects two particles
- */
-public strictfp class SimpleSpring implements IConstraint {
+/** A Spring-like constraint that connects two particles */
+public class SimpleSpring implements IConstraint {
 	
 	public Particle particle1;
 	public Particle particle2;	
 
-	float stiffness;
-	float restLength;
+	int stiffness;
+	int restLength;
 
 	private boolean isCollidable;
 	private SpringParticle collisionParticle;
@@ -60,10 +58,10 @@ public strictfp class SimpleSpring implements IConstraint {
 	public SimpleSpring(
 			Particle particle1, 
 			Particle particle2, 
-			float stiffness/*= 0.5*/,
+			int stiffness/*= 0.5*/,
 			boolean isCollidable/*= false*/,
-			float rectHeight/*= 1*/,
-			float rectScale/*= 1*/,
+			int rectHeight/*= 1*/,
+			int rectScale/*= 1*/,
 			boolean scaleToLength/*= false*/) {
 
 		this.stiffness = stiffness;
@@ -71,7 +69,7 @@ public strictfp class SimpleSpring implements IConstraint {
 		this.particle2 = particle2;
 		// if the two particles are at the same location, offset slightly
 		if (particle1.position.x == particle2.position.x && particle1.position.y == particle2.position.y) {
-			particle2.position.x += 0.0001;
+			particle2.position.x += FP.POINT_0001;
 		}
 		restLength = getCurrLength();
 		setCollidable(isCollidable, rectHeight, rectScale, scaleToLength);
@@ -81,10 +79,10 @@ public strictfp class SimpleSpring implements IConstraint {
 			Particle particle1, 
 			Particle particle2, 
 			boolean isCollidable/*= false*/,
-			float rectHeight/*= 1*/,
-			float rectScale/*= 1*/,
+			int rectHeight/*= 1*/,
+			int rectScale/*= 1*/,
 			boolean scaleToLength/*= false*/) {
-		this(particle1, particle2, 0f, isCollidable, rectHeight, rectScale, scaleToLength);
+		this(particle1, particle2, 0, isCollidable, rectHeight, rectScale, scaleToLength);
 	}
 	
 	/**
@@ -94,10 +92,10 @@ public strictfp class SimpleSpring implements IConstraint {
 	 * 
 	 * @returns the current rotation in radians
 	 */			
-	public float getRotation() {
-		Vector2f diff = new Vector2f(particle1.position.x - particle2.position.x,
-				particle1.position.y - particle2.position.y);
-		return (float)Math.atan2(diff.y, diff.x);
+	public int getRotation() {
+		int diffX = particle1.position.x - particle2.position.x;
+		int diffY = particle1.position.y - particle2.position.y;
+		return FP.atan2(diffY, diffX);
 	}
 	
 	/**
@@ -106,8 +104,10 @@ public strictfp class SimpleSpring implements IConstraint {
 	 * @returns A Vector2f representing the center of this
 	 */			
 	public Vector2f getCenter() {
-		return new Vector2f((particle1.position.x + particle2.position.x) / 2f, 
-				(particle1.position.y + particle2.position.y) / 2f);
+		return new Vector2f((int) (((long) (particle1.position.x + particle2.position.x) << FP.FRACTION_BITS) / FP.TWO),
+				(int) (((long) (particle1.position.y + particle2.position.y) << FP.FRACTION_BITS) / FP.TWO));
+// above replaces		return new Vector2f((particle1.position.x + particle2.position.x) / 2f, 
+//				(particle1.position.y + particle2.position.y) / 2f);
 	}
 	
 	/**
@@ -117,14 +117,14 @@ public strictfp class SimpleSpring implements IConstraint {
 	 * will result in an collision area that spans a percentage of that distance. Setting the value
 	 * higher will cause the collision rectangle to extend past the two end particles.
 	 */		 	
-	public void setRectScale(float scale) {
+	public void setRectScale(int scale) {
 		if (getCollisionParticle() == null) {
 			return;
 		}
 		getCollisionParticle().setRectScale(scale);
 	}
 	
-	public float getRectScale() {
+	public int getRectScale() {
 		return getCollisionParticle().getRectScale();
 	}
 	
@@ -132,10 +132,12 @@ public strictfp class SimpleSpring implements IConstraint {
 	 * Returns the length of the SpringConstraint, the distance between its two 
 	 * attached particles.
 	 */ 
-	public float getCurrLength() {
-		Vector2f diff = new Vector2f(particle1.position.x - particle2.position.x,
-				particle1.position.y - particle2.position.y);
-		return (float)Math.sqrt(diff.x * diff.x + diff.y * diff.y);
+	public int getCurrLength() {
+		int diffX = particle1.position.x - particle2.position.x;
+		int diffY = particle1.position.y - particle2.position.y;
+		
+		return FP.sqrt((int) (((long) diffX * diffX) >> FP.FRACTION_BITS) + (int) (((long) diffY * diffY) >> FP.FRACTION_BITS));
+		// above replaces return (float)Math.sqrt(diff.x * diff.x + diff.y * diff.y);
 	}
 	
 	/**
@@ -144,16 +146,18 @@ public strictfp class SimpleSpring implements IConstraint {
 	 * than 0. If you set the value to 10, then the collision rect will have a height of 10.
 	 * The height is perpendicular to the line connecting the two particles
 	 */	 
-	public float getRectHeight() {
+	public int getRectHeight() {
 		return getCollisionParticle().getRectHeight();
 	}
 	
-	public void setRectHeight(float h) {
-		if (getCollisionParticle() == null) return;
-		getCollisionParticle().setRectHeight(h);
+	public void setRectHeight(int height) {
+		if (getCollisionParticle() == null) {
+			return;
+		}
+		getCollisionParticle().setRectHeight(height);
 	}			
 	
-	public float getRestLength() {
+	public int getRestLength() {
 		return restLength;
 	}
 	
@@ -163,7 +167,7 @@ public strictfp class SimpleSpring implements IConstraint {
 	 * The SpringConstraint will always try to keep the particles this distance apart. Values must 
 	 * be > 0.
 	 */			
-	public void setRestLength(float restLength) {
+	public void setRestLength(int restLength) {
 		if (restLength <= 0) {
 			throw new IllegalArgumentException("restLength must be greater than 0");
 		}
@@ -186,22 +190,22 @@ public strictfp class SimpleSpring implements IConstraint {
 	 * fixed particle, to correct for situations where the collision could never be
 	 * resolved. Values must be between 0.0 and 1.0.
 	 */	
-	public float getFixedEndLimit() {
+	public int getFixedEndLimit() {
 		if (collisionParticle == null) {
 			return 0;
 		}
 		return collisionParticle.getFixedEndLimit();
 	}	
 			
-	public void setFixedEndLimit(float fixedEndLimit) {
+	public void setFixedEndLimit(int fixedEndLimit) {
 		if (collisionParticle == null) {
 			return;
 		}
 		collisionParticle.setFixedEndLimit(fixedEndLimit);
 	}
 	
-	public void setCollidable(boolean isCollidable, float rectHeight, 
-			float rectScale, boolean scaleToLength/*=false*/) {
+	public void setCollidable(boolean isCollidable, int rectHeight, 
+			int rectScale, boolean scaleToLength/*=false*/) {
 		this.isCollidable = isCollidable;
 		collisionParticle = null;
 		if (isCollidable) {
@@ -248,18 +252,37 @@ public strictfp class SimpleSpring implements IConstraint {
 		if (particle1.isFixed && particle2.isFixed) {
 			return;
 		}
-		float deltaLength = getCurrLength();			
-		float diff = (deltaLength - getRestLength()) 
-				/ (deltaLength * (particle1.getInvMass() + particle2.getInvMass()));
-		float diffStiff = diff * stiffness;
-		Vector2f dmds = new Vector2f((particle1.position.x - particle2.position.x) * diffStiff,
-				(particle1.position.y - particle2.position.y) * diffStiff);
-			
-		particle1.position.x -= dmds.x * particle1.getInvMass();
-		particle1.position.y -= dmds.y * particle1.getInvMass();
+		int deltaLength = getCurrLength();
+		int invMass1 = particle1.getInvMass();
+		int invMass2 = particle2.getInvMass();
+		int invMassSum = invMass1 + invMass2;
 		
-		particle2.position.x += dmds.x * particle2.getInvMass();
-		particle2.position.y += dmds.y * particle2.getInvMass();
+		int diff = (int) (((long) (deltaLength - getRestLength()) << FP.FRACTION_BITS) / ((int) (((long) deltaLength * invMassSum) >> FP.FRACTION_BITS)));
+		// above replaces float diff = (deltaLength - getRestLength()) / (deltaLength * invMassSum);
+		
+		int diffStiff = (int) (((long) diff * stiffness) >> FP.FRACTION_BITS);
+		// above replaces float diffStiff = diff * stiffness;
+		
+		int diffX = particle1.position.x - particle2.position.x;
+		int diffY = particle1.position.y - particle2.position.y;
+		
+		int dmdsX = (int) (((long) diffX * diffStiff) >> FP.FRACTION_BITS);
+		// above replaces int dmdsX = diffX * diffStiff;
+		
+		int dmdsY = (int) (((long) diffY * diffStiff) >> FP.FRACTION_BITS);
+		// above replaces int dmdsY = diffY * diffStiff;
+		
+		particle1.position.x -= (int) (((long) dmdsX * invMass1) >> FP.FRACTION_BITS);
+		// above replaces particle1.position.x -= dmdsX * particle1.getInvMass();
+		
+		particle1.position.y -= (int) (((long) dmdsY * invMass1) >> FP.FRACTION_BITS);
+		// above replaces particle1.position.y -= dmdsY * particle1.getInvMass();
+		
+		particle2.position.x += (int) (((long) dmdsX * invMass2) >> FP.FRACTION_BITS);
+		// above replaces particle2.position.x += dmdsX * particle2.getInvMass();
+		
+		particle2.position.y += (int) (((long) dmdsY * invMass2) >> FP.FRACTION_BITS);
+		// above replaces particle2.position.y += dmdsY * particle2.getInvMass();
 	}		
 	
 	SpringParticle getCollisionParticle(){
@@ -280,18 +303,18 @@ public strictfp class SimpleSpring implements IConstraint {
 		
 		private Vector2f rca = new Vector2f();
 		private Vector2f rcb = new Vector2f();
-		private float s;
+		private int s;
 		
-		private float rectScale;
-		private float rectHeight;
-		private float fixedEndLimit;
+		private int rectScale;
+		private int rectHeight;
+		private int fixedEndLimit;
 				
 		public SpringParticle(
 				Particle particle1, 
 				Particle particle2, 
 				SimpleSpring parent, 
-				float rectHeight, 
-				float rectScale,
+				int rectHeight, 
+				int rectScale,
 				boolean scaleToLength) {
 			super(0,0,0,0,0,false);
 			this.particle1 = particle1;
@@ -304,19 +327,19 @@ public strictfp class SimpleSpring implements IConstraint {
 			fixedEndLimit = 0;
 		}
 		
-		void setRectScale(float s) {
-			rectScale = s;
+		void setRectScale(int scale) {
+			rectScale = scale;
 		}
 		
-		float getRectScale() {
+		int getRectScale() {
 			return rectScale;
 		}
 		
-		void setRectHeight(float r) {
-			rectHeight = r;
+		void setRectHeight(int height) {
+			rectHeight = height;
 		}
 		
-		float getRectHeight() {
+		int getRectHeight() {
 			return rectHeight;
 		}
 
@@ -326,40 +349,40 @@ public strictfp class SimpleSpring implements IConstraint {
 		 * fixed particle, to correct for situations where the collision could never be
 		 * resolved.
 		 */	
-		void setFixedEndLimit(float f) {
-			fixedEndLimit = f;
+		void setFixedEndLimit(int limit) {
+			fixedEndLimit = limit;
 		}
 		
-		float getFixedEndLimit() {
+		int getFixedEndLimit() {
 			return fixedEndLimit;
 		}
 
 		/** @return the average mass of the two connected particles */
 		@Override
-		public float getMass() {
+		public int getMass() {
 			return (particle1.getMass() + particle2.getMass()) / 2; 
 		}
 		
 		/** @return the average elasticity of the two connected particles */
 		@Override
-		public float getElasticity() {
+		public int getElasticity() {
 			return (particle1.getElasticity() + particle2.getElasticity()) / 2; 
 		}
 		
 		/** @return the average friction of the two connected particles */
 		@Override
-		public float getFriction() {
+		public int getFriction() {
 			return (particle1.getFriction() + particle2.getFriction()) / 2; 
 		}
 		
 		/** @return the average velocity of the two connected particles */
 		@Override
 		public Vector2f getVelocity(){
-			Vector2f p1v=  particle1.getVelocity();
+			Vector2f p1v =  particle1.getVelocity();
 			Vector2f p2v =  particle2.getVelocity();
 			
-			avgVelocity.x = (p1v.x + p2v.x) / 2f;
-			avgVelocity.y = (p1v.y + p2v.y) / 2f;
+			avgVelocity.x = (p1v.x + p2v.x) / 2;
+			avgVelocity.y = (p1v.y + p2v.y) / 2;
 			return avgVelocity;
 		}	
 		
@@ -369,11 +392,13 @@ public strictfp class SimpleSpring implements IConstraint {
 
 	   /** @return the average inverse mass. */
 		@Override
-		float getInvMass() {
+		int getInvMass() {
 			if (particle1.isFixed && particle2.isFixed) {
 				return 0;
 			}
-			return 1 / ((particle1.getMass() + particle2.getMass()) / 2);  
+			
+			return (int) (((long) FP.ONE << FP.FRACTION_BITS) / ((particle1.getMass() + particle2.getMass()) / 2));
+			// above replaces return 1 / ((particle1.getMass() + particle2.getMass()) / 2);  
 		}
 		
 		/** called only on collision */
@@ -395,59 +420,86 @@ public strictfp class SimpleSpring implements IConstraint {
 		
 		@Override	
 		void respondToCollision(Collision collision, Vector2f mtd, Vector2f velocity, Vector2f n,
-				float d, int o) {
+				int d, int o) {
 			addCollisionEvent(collision);
 			if (getFixed() || !collision.you.isSolid) {
 				return;
 			}
 			
-			float t = getContactPointParam(collision.you);
-			float c1 = (1 - t);
-			float c2 = t;
+			int t = getContactPointParam(collision.you);
+			int c1 = (FP.ONE - t);
+			int c2 = t;
 			
 			// if one is fixed then move the other particle the entire way out of 
 			// collision. also, dispose of collisions at the sides of the collision particle. The higher
 			// the fixedEndLimit value, the more of the collision particle not be effected by collision. 
 			if (particle1.isFixed) {
-				if (c2 <= getFixedEndLimit()) return;
-				lambda.x = mtd.x / c2;
-				lambda.y = mtd.y / c2;
+				if (c2 <= getFixedEndLimit()) {
+					return;
+				}
+				
+				lambda.x = (int) (((long) mtd.x << FP.FRACTION_BITS) / c2);
+				// above replaces lambda.x = mtd.x / c2;
+				
+				lambda.y = (int) (((long) mtd.y << FP.FRACTION_BITS) / c2);
+				// above replaces lambda.y = mtd.y / c2;
+				
 				particle2.position.x += lambda.x;
 				particle2.position.y += lambda.y;
 				particle2.setVelocity(velocity);
-
 			} else if (particle2.isFixed) {
-				if (c1 <= getFixedEndLimit()) return;
-				lambda.x = mtd.x / c1;
-				lambda.y = mtd.y / c1;
+				if (c1 <= getFixedEndLimit()) {
+					return;
+				}
+
+				lambda.x = (int) (((long) mtd.x << FP.FRACTION_BITS) / c1);
+				// above replaces lambda.x = mtd.x / c1;
+				
+				lambda.y = (int) (((long) mtd.y << FP.FRACTION_BITS) / c1);
+				// above replaces lambda.y = mtd.y / c1;
+				
 				particle1.position.x += lambda.x;
 				particle1.position.y += lambda.y;
 				particle1.setVelocity(velocity);		
 
 			// else both non fixed - move proportionally out of collision
 			} else { 
-				float denom = (c1 * c1 + c2 * c2);
+				int c1squared = (int) (((long) c1 * c1) >> FP.FRACTION_BITS);
+				int c2squared = (int) (((long) c2 * c2) >> FP.FRACTION_BITS);
+				int denom = c1squared + c2squared;
+				// above replaces float denom = (c1 * c1 + c2 * c2);
+				
 				if (denom == 0) {
 					return;
 				}
-				lambda.x = mtd.x / denom;
-				lambda.y = mtd.y / denom;
-			
-				particle1.position.x += lambda.x * c1;
-				particle1.position.y += lambda.y * c1;
 				
-				particle2.position.x += lambda.x * c2;
-				particle2.position.y += lambda.y * c2;
+				lambda.x = (int) (((long) mtd.x << FP.FRACTION_BITS) / denom);
+				// above replaces lambda.x = mtd.x / denom;
+				
+				lambda.y = (int) (((long) mtd.y << FP.FRACTION_BITS) / denom);
+				// above replaces lambda.y = mtd.y / denom;
+			
+				particle1.position.x += (int) (((long) lambda.x * c1) >> FP.FRACTION_BITS);
+				// above replaces particle1.position.x += lambda.x * c1;
+				
+				particle1.position.y += (int) (((long) lambda.y * c1) >> FP.FRACTION_BITS);
+				// above replaces particle1.position.y += lambda.y * c1;
+				
+				particle2.position.x += (int) (((long) lambda.x * c2) >> FP.FRACTION_BITS);
+				// above replaces particle2.position.x += lambda.x * c2;
+				
+				particle2.position.y += (int) (((long) lambda.y * c2) >> FP.FRACTION_BITS);
+				// above replaces particle2.position.y += lambda.y * c2;
 			
 				// if collision is in the middle of collision particle set the velocity of both end 
 				// particles
-				if (t == 0.5) {
+				if (t == FP.POINT_5) {
 					particle1.setVelocity(velocity);
 					particle2.setVelocity(velocity);
 				
 				// otherwise change the velocity of the particle closest to contact
 				} else {
-					Particle corrParticle = (t < 0.5) ? particle1 : particle2;
+					Particle corrParticle = (t < FP.POINT_5) ? particle1 : particle2;
 					corrParticle.setVelocity(velocity);
 				}
 			}
@@ -457,35 +509,43 @@ public strictfp class SimpleSpring implements IConstraint {
 		 * Given a point, returns a parameterized location on this collision particle. Note
 		 * this is just treating the collision particle as if it were a line segment (AB).
 		 */
-		private float closestParamPoint(Vector2f point) {
-			Vector2f segmentAB = new Vector2f(particle2.position.x - particle1.position.x,
-					particle2.position.y - particle1.position.y);
-			Vector2f tmp = new Vector2f(point.x - particle1.position.x, point.y - particle1.position.y);
-			float dot = segmentAB.x * tmp.x + segmentAB.y * tmp.y;
-			float dot2 = segmentAB.x * segmentAB.x + segmentAB.y * segmentAB.y;
-			float t = dot / dot2;
-			return MathUtil.clamp(t, 0, 1);
+		private int closestParamPoint(Vector2f point) {
+			int segmentABx = particle2.position.x - particle1.position.x;
+			int segmentABy = particle2.position.y - particle1.position.y;
+			int tmpX = point.x - particle1.position.x;
+			int tmpY = point.y - particle1.position.y;
+			
+			int dot = (int) (((long) segmentABx * tmpX) >> FP.FRACTION_BITS) + (int) (((long) segmentABy * tmpY) >> FP.FRACTION_BITS);
+			// above replaces float dot = segmentABx * tmpX + segmentABy * tmpY;
+			
+			int dot2 = (int) (((long) segmentABx * segmentABx) >> FP.FRACTION_BITS) + (int) (((long) segmentABy * segmentABy) >> FP.FRACTION_BITS);
+			// above replaces float dot2 = segmentABx * segmentABx + segmentABy * segmentABy;
+			
+			int t = (int) (((long) dot << FP.FRACTION_BITS) / dot2);
+			// above replaces float t = dot / dot2;
+			
+			return FP.clamp(t, 0, FP.ONE);
 		}
 
 		/** 
 		 * @return a contact location on this collision particle expressed as a parametric
 		 * value in [0,1]
 		 */
-		private float getContactPointParam(Particle particle) {
-			float t = 0f;
+		private int getContactPointParam(Particle particle) {
+			int t = 0;
 			if (particle instanceof Circle)  {
 				t = closestParamPoint(particle.position);
 			} else if (particle instanceof Rectangle) {
 				// go through the sides of the colliding rectangle as line segments
 				int shortestIndex = 0;
-				float paramList[] = new float[4];
-				float shortestDistance = Float.POSITIVE_INFINITY;
+				int paramList[] = new int[4];
+				int shortestDistance = FP.MAX_VALUE;
 				
 				for (int i = 0; i < 4; ++i) {
 					setCorners((Rectangle)particle, i);
 					
 					// check for closest points on collision particle to side of rectangle
-					float d = closestPtSegmentSegment();
+					int d = closestPtSegmentSegment();
 					if (d < shortestDistance) {
 						shortestDistance = d;
 						shortestIndex = i;
@@ -498,15 +558,22 @@ public strictfp class SimpleSpring implements IConstraint {
 		}
 		
 		private void setCorners(Rectangle rectangle, int i) {
-			float ae0_x = rectangle.axes[0].x * rectangle.extents[0];
-			float ae0_y = rectangle.axes[0].y * rectangle.extents[0];
-			float ae1_x = rectangle.axes[1].x * rectangle.extents[1];
-			float ae1_y = rectangle.axes[1].y * rectangle.extents[1];
+			int ae0_x = (int) (((long) rectangle.axes[0].x * rectangle.extents[0]) >> FP.FRACTION_BITS);
+			// above replaces float ae0_x = rectangle.axes[0].x * rectangle.extents[0];
 			
-			float emx = ae0_x - ae1_x;
-			float emy = ae0_y - ae1_y;
-			float epx = ae0_x + ae1_x;
-			float epy = ae0_y + ae1_y;
+			int ae0_y = (int) (((long) rectangle.axes[0].y * rectangle.extents[0]) >> FP.FRACTION_BITS);
+			// above replaces float ae0_y = rectangle.axes[0].y * rectangle.extents[0];
+			
+			int ae1_x = (int) (((long) rectangle.axes[1].x * rectangle.extents[1]) >> FP.FRACTION_BITS);
+			// above replaces float ae1_x = rectangle.axes[1].x * rectangle.extents[1];
+			
+			int ae1_y = (int) (((long) rectangle.axes[1].y * rectangle.extents[1]) >> FP.FRACTION_BITS);
+			// above replaces float ae1_y = rectangle.axes[1].y * rectangle.extents[1];
+			
+			int emx = ae0_x - ae1_x;
+			int emy = ae0_y - ae1_y;
+			int epx = ae0_x + ae1_x;
+			int epy = ae0_y + ae1_y;
 			
 			if (i == 0) {
 				// 0 and 1
@@ -536,41 +603,73 @@ public strictfp class SimpleSpring implements IConstraint {
 		}
 		
 		/** pp1-pq1 will be the collision particle line segment on which we need parameterized s. */
-		private float closestPtSegmentSegment() {
-			Vector2f pp2= rca;
+		private int closestPtSegmentSegment() {
+			Vector2f pp2 = rca;
 			Vector2f pq2 = rcb;
 			
-			Vector2f d1 = new Vector2f(particle2.position.x - particle1.position.x, particle2.position.y - particle1.position.y);
-			Vector2f d2 = new Vector2f(pq2.x - pp2.x, pq2.y - pp2.y);
-			Vector2f r = new Vector2f(particle1.position.x - pp2.x, particle1.position.y - pp2.y);
+			int d1x = particle2.position.x - particle1.position.x;
+			int d1y = particle2.position.y - particle1.position.y;
+			int d2x = pq2.x - pp2.x;
+			int d2y = pq2.y - pp2.y;
+			int rX = particle1.position.x - pp2.x;
+			int rY = particle1.position.y - pp2.y;
 		
-			float t;
-			float a = d1.x * d1.x + d1.y * d1.y;
-			float e = d2.x * d2.x + d2.y * d2.y;
-			float f = d2.x * r.x + d2.y * r.y;
-			float c = d1.x * r.x + d1.y * r.y;
-			float b = d1.x * d2.x + d1.y * d2.y;
-			float denom = a * e - b * b;
+			int t;
 			
-			if (denom != 0.0) {
-				s = MathUtil.clamp((b * f - c * e) / denom, 0, 1);
+			int a = (int) (((long) d1x * d1x) >> FP.FRACTION_BITS) + (int) (((long) d1y * d1y) >> FP.FRACTION_BITS);
+			// above replaces int a = d1x * d1x + d1y * d1y;
+			
+			int e = (int) (((long) d2x * d2x) >> FP.FRACTION_BITS) + (int) (((long) d2y * d2y) >> FP.FRACTION_BITS);
+			// above replaces int e = d2x * d2x + d2y * d2y;
+			
+			int f = (int) (((long) d2x * rX) >> FP.FRACTION_BITS) + (int) (((long) d2y * rY) >> FP.FRACTION_BITS);
+			// above replaces int f = d2x * rX + d2y * rY;
+			
+			int c = (int) (((long) d1x * rX) >> FP.FRACTION_BITS) + (int) (((long) d1y * rY) >> FP.FRACTION_BITS);
+			// above replaces int c = d1x * rX + d1y * rY;
+			
+			int b = (int) (((long) d1x * d2x) >> FP.FRACTION_BITS) + (int) (((long) d1y * d2y) >> FP.FRACTION_BITS);
+			// above replaces int b = d1x * d2x + d1y * d2y;
+			
+			int denom = (int) (((long) a * e) >> FP.FRACTION_BITS) - (int) (((long) b * b) >> FP.FRACTION_BITS);
+			// above replaces int denom = a * e - b * b;
+			
+			if (denom != 0) {
+				s = FP.clamp((b * f - c * e) / denom, 0, FP.ONE);
 			} else {
-				s = 0.5f; // give the midpoint for parallel lines
+				s = FP.POINT_5; // give the midpoint for parallel lines
 			}
-			t = (b * s + f) / e;
+			
+			t = (int) (((long) (((int) (((long) b * s) >> FP.FRACTION_BITS)) + f) << FP.FRACTION_BITS) / e);
+			// above replaces t = (b * s + f) / e;
 			 
 			if (t < 0) {
 				t = 0;
-			 	s = MathUtil.clamp(-c / a, 0, 1);
+				int negCdivByA = (int) (((long) -c << FP.FRACTION_BITS) / a); // replaces -c / a
+			 	s = FP.clamp(negCdivByA, 0, FP.ONE);
 			} else if (t > 0) {
 			 	t = 1;
-			 	s = MathUtil.clamp((b - c) / a, 0, 1);
+			 	int bMinusCdivByA = (int) (((long) (b - c) << FP.FRACTION_BITS) / a); // replaces (b - c) / a
+			 	s = FP.clamp(bMinusCdivByA, 0, FP.ONE);
 			}
-			 
-			Vector2f c1 = new Vector2f(particle1.position.x + (d1.x * s), particle1.position.y + (d1.y * s));
-			Vector2f c2 = new Vector2f(pp2.x + (d2.x * t), pp2.y + (d2.y * t));
-			Vector2f c1minusc2 = new Vector2f(c1.x - c2.x, c1.y - c2.y);
-			return c1minusc2.x * c1minusc2.x + c1minusc2.y * c1minusc2.y;
+			
+			int c1x = particle1.position.x + ((int) (((long) d1x * s) >> FP.FRACTION_BITS));
+			// above replaces int c1x = particle1.position.x + (d1x * s);
+			
+			int c1y = particle1.position.y + ((int) (((long) d1y * s) >> FP.FRACTION_BITS));
+			// above replaces int c1y = particle1.position.y + (d1y * s);
+			
+			int c2x = pp2.x + ((int) (((long) d2x * t) >> FP.FRACTION_BITS));
+			// above replaces int c2x = pp2.x + (d2x * t);
+			
+			int c2y = pp2.y + ((int) (((long) d2y * t) >> FP.FRACTION_BITS));
+			// above replaces int c2y = pp2.y + (d2y * t);
+			
+			int c1minusc2x = c1x - c2x;
+			int c1minusc2y = c1y - c2y;
+			
+			return (int) (((long) c1minusc2x * c1minusc2x) >> FP.FRACTION_BITS) + (int) (((long) c1minusc2y * c1minusc2y) >> FP.FRACTION_BITS);
+			// above replaces return c1minusc2.x * c1minusc2.x + c1minusc2.y * c1minusc2.y;
 		}
 	}
 	

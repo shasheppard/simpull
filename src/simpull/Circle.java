@@ -29,9 +29,9 @@
 
 package simpull;
 	
-public strictfp class Circle extends Particle {
+public class Circle extends Particle {
 
-	private float radius;
+	private int radius;
 	
 	/**
 	 * @param x The initial x position of this particle.
@@ -45,26 +45,23 @@ public strictfp class Circle extends Particle {
 	 * @param friction The surface friction of the particle.
 	 */
 	public Circle (
-			float x, 
-			float y, 
-			float radius, 
+			int x, 
+			int y, 
+			int radius, 
 			boolean isFixed/*= false*/,
-			float mass/*= 1*/, 
-			float elasticity/* = 0.3*/,
-			float friction/*= 0*/) {
-				
+			int mass/*= 1*/, 
+			int elasticity/* = 0.3*/,
+			int friction/*= 0*/) {
 		super(x, y, isFixed, mass, elasticity, friction);
 		this.radius = radius;
 	}
 
-	/**
-	 * The radius of the particle.
-	 */
-	public float getRadius() {
+	/** @return radius of the particle. */
+	public int getRadius() {
 		return radius;
 	}		
 	
-	public void setRadius(float radius) {
+	public void setRadius(int radius) {
 		this.radius = radius;
 	}
 	
@@ -80,7 +77,8 @@ public strictfp class Circle extends Particle {
 	}
 	
 	Interval getProjection(Vector2f axis) {
-		float c = samp.x * axis.x + samp.y * axis.y;
+		int c = (int) (((long) samp.x * axis.x) >> FP.FRACTION_BITS) + (int) (((long) samp.y * axis.y) >> FP.FRACTION_BITS);
+		// above replaces float c = samp.x * axis.x + samp.y * axis.y;
 		interval.min = c - radius;
 		interval.max = c + radius;
 		

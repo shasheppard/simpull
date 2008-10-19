@@ -1,29 +1,67 @@
+/*
+    Copyright (c) 2008, Shaun Curtis Sheppard
+    All rights reserved.
+    
+    Redistribution and use in source and binary forms, with or without 
+    modification, are permitted provided that the following conditions are met:
+
+        * Redistributions of source code must retain the above copyright 
+          notice, this list of conditions and the following disclaimer.
+        * Redistributions in binary form must reproduce the above copyright 
+          notice, this list of conditions and the following disclaimer in the 
+          documentation and/or other materials provided with the distribution.
+        * Neither the name of Shaun Curtis Sheppard nor the names of its 
+          contributors may be used to endorse or promote products derived from 
+          this software without specific prior written permission.
+    
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+    ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE 
+    LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
+    CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
+    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
+    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
+    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
+    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+    POSSIBILITY OF SUCH DAMAGE.
+*/
+
 package simpull;
 
-
-/** Fixed point conversion (to/from) utility. */
+/** 
+ * Fixed point conversion (to/from) utility.
+ * It also includes some utilities for math.
+ * This is really a replacement for MathUtil.
+ * The change of name is to strengthen the thinking that this is all Fixed-Point, 
+ * not to mention the fewer key stroke class name.
+ */
 public final class FP {
 	
     public static final int FRACTION_BITS = 16;
     public static final int FRACTION_MASK = (1 << FRACTION_BITS) - 1;
     public static final int ONE = (1 << FRACTION_BITS);
+    public static final int TWO = from(2); // FIXME this can probably be replaced by bitshift by 1 for division by 2
+	public static final int POINT_0001 = from(0.0001f);
+	public static final int POINT_000001 = from(0.000001f);
+	public static final int POINT_5 = from(0.5f);
     public static final int ONE_HALF = ONE >> 1;
     public static final int MAX_VALUE = (1 << 31) - 1;
     public static final int MIN_VALUE = -(1 << 31);
     /** The maximum integer value that a 32-bit fixed-point value can represent. */
     public static final int MAX_INT_VALUE = (1 << (31 - FRACTION_BITS)) - 1;
-    /** The minumum integer value that a 32-bit fixed-point value can represent. */
+    /** The minimum integer value that a 32-bit fixed-point value can represent. */
     public static final int MIN_INT_VALUE = -(1 << (31 - FRACTION_BITS));
     /** The maximum 32-bit floating-point value that a 32-bit fixed-point value can represent. */
     // Math.round(MAX_FLOAT_VALUE * ONE) = MAX_VALUE
     public static final float MAX_FLOAT_VALUE = 32768f; 
-    /** The minumum 32-bit floating-point value that a 32-bit fixed-point value can represent. */
+    /** The minimum 32-bit floating-point value that a 32-bit fixed-point value can represent. */
     public static final float MIN_FLOAT_VALUE = -32768f;
     /** The maximum 64-bit floating-point value that a 32-bit fixed-point value can represent. */
-    // Found this by trial and error
+    // David Brackeen found this by trial and error
     // Math.round(MAX_DOUBLE_VALUE * ONE) = MAX_VALUE
     public static final double MAX_DOUBLE_VALUE = 32767.999992370602;
-    /** The minumum 64-bit floating-point value that a 32-bit fixed-point value can represent. */
+    /** The minimum 64-bit floating-point value that a 32-bit fixed-point value can represent. */
     public static final double MIN_DOUBLE_VALUE = -32768.0;
     
     public static final int PI = (int)Math.round(Math.PI * ONE);
@@ -437,12 +475,28 @@ public final class FP {
     ///////////////////////////////////////////////////////////////////////////
 
     
+	/** @return value clamped between min and max */	
+	static int clamp(int value, int min, int max) {
+		if (value < min) {
+			return min;
+		}
+		if (value > max) {
+			return max;
+		}
+		return value;
+	}
+	
+	/** @return 1 if the value is >= 0. Returns -1 if the value is < 0. */	
+	static int sign(int value) {
+        return (value > 0)?1:((value < 0)?-1:0);
+	}
+	
     /** @return the absolute value of a number. */
-	private static final int abs(int n) {
-	    return (n >= 0)?n:-n;
+	static int abs(int value) {
+	    return (value >= 0)?value:-value;
 	}
 	
 	/** This is a completely static class */
 	private FP () {}
-
+	
 }

@@ -30,7 +30,6 @@
 package simpull;
 
 import java.util.ArrayList;
-import java.util.List;
 	
 /**
  * The Group class can contain {@link Particle}, {@link IConstraint}, and {@link Composite}. Groups can be 
@@ -38,8 +37,8 @@ import java.util.List;
  */ 
 public class Group extends SimpullCollection {
 	
-	List<Composite> composites;
-	List<Group> collideWithGroups;
+	ArrayList<Composite> composites;
+	ArrayList<Group> collideWithGroups;
 	
 	private static final String CANNOT_ADD_INCOMPLETE_COMPOSITE_MESSAGE = "Cannot add an incomplete Composite to a Group.";
 	
@@ -129,7 +128,7 @@ public class Group extends SimpullCollection {
 	}
 	
 	@Override
-	void integrate(float dt2) {
+	void integrate(int dt2) {
 		super.integrate(dt2);
 		for (Composite composite : composites) {
 			composite.integrate(dt2);

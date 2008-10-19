@@ -49,7 +49,7 @@ import simpull.events.sample.Events.CollisionEvent;
  * 			In fact, all {@link EventParticipator} method implementations delegate to the
  * 			center particle.
  */ 
-public strictfp class Composite extends SimpullCollection implements IPhysicsObject, EventParticipator {
+public class Composite extends SimpullCollection implements IPhysicsObject, EventParticipator {
 	
 	/** This is used as a reference point, helpful in determining the current rotation. */
 	protected Particle firstParticleAdded;
@@ -61,17 +61,17 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	private static final String CANNOT_ADD_PARENTED_MESSAGE = "Cannot add a Composite that has already been added to another Composite.";
 	private static final String NO_CONNECTION_TO_CENTER_MESSAGE = "Cannont mark a Composite as complete that does not have any connection to the center particle.";
 	
-	private List<Composite> composites = new ArrayList<Composite>();
+	private ArrayList<Composite> composites = new ArrayList<Composite>();
 	private Composite parentComposite;
 	private Vector2f delta = new Vector2f();
 	private boolean compositeCompleted;
-	private float initialReferenceRotation;
-	private float angularVelocity;
+	private int initialReferenceRotation;
+	private int angularVelocity;
 	/** When no coordinates are given, the center point will be calculated based on the layout of the particles added */
 	private boolean calculateCenterPoint;
-	private float mass;
+	private int mass;
 	/** center particle will be 5% of total mass */
-	private float centerPercentageOfTotalMass = 0.05f;
+	private int centerPercentageOfTotalMass = FP.from(0.05f);
 	private boolean autoConnectParticlesToCenter;
 	
 	/**
@@ -85,8 +85,8 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	 * 		that in order for a {@link Composite} to function as expected some connections to the center must be made
 	 * 		manually before {@link #setCompositeCompleted(simpull.Composite.Finisher...)} is called.
 	 */
-	public Composite(boolean isFixed, float mass, boolean autoConnectParticlesToCenter) {
-		centerParticle = new Particle(0, 0, isFixed, mass, 0f, 0f);
+	public Composite(boolean isFixed, int mass, boolean autoConnectParticlesToCenter) {
+		centerParticle = new Particle(0, 0, isFixed, mass, 0, 0);
 		this.mass = mass;
 		this.autoConnectParticlesToCenter = autoConnectParticlesToCenter;
 		calculateCenterPoint = true;
@@ -105,8 +105,8 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	 * @param centerX the non-derived x value of the center particle of this composite
 	 * @param centerY the non-derived y value of the center particle of this composite
 	 */
-	public Composite(boolean isFixed, float mass, boolean autoConnectParticlesToCenter, float centerX, float centerY) {
-		centerParticle = new Particle(centerX, centerY, isFixed, mass, 0f, 0f);
+	public Composite(boolean isFixed, int mass, boolean autoConnectParticlesToCenter, int centerX, int centerY) {
+		centerParticle = new Particle(centerX, centerY, isFixed, mass, 0, 0);
 		this.mass = mass;
 		this.autoConnectParticlesToCenter = autoConnectParticlesToCenter;
 		calculateCenterPoint = false;
@@ -150,7 +150,7 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 		// TODO Does this need to take place for elasticity and friction too?
 	}
 	
-	public void setAngularVelocity(float angularVelocity) {
+	public void setAngularVelocity(int angularVelocity) {
 		this.angularVelocity = angularVelocity;
 	}
 	
@@ -158,13 +158,13 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 		return angularVelocity;
 	}
 	
-	public void setElasticity(float elasticity) {
+	public void setElasticity(int elasticity) {
 		for (Particle particle : particles) {
 			particle.setElasticity(elasticity);
 		}
 	}
 
-	public void setFriction(float friction) {
+	public void setFriction(int friction) {
 		for (Particle particle : particles) {
 			particle.setFriction(friction);
 		}
@@ -175,16 +175,19 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	 * The center particle is assigned a percentage based on the value of the centerPercentageOfTotalMass property.
 	 * @param mass
 	 */
-	public void setMass(float mass) {
+	public void setMass(int mass) {
 		// TODO maybe make a generic method for distributing a value and pass a visitor to know what is distributed
-		float massSum = 0f;
+		int massSum = 0;
 		for (Particle particle : particles) {
 			massSum += particle.getMass();
 		}
-		float centerMass = mass * centerPercentageOfTotalMass;
-		float nonCenterMass = mass - centerMass;
+		int centerMass = (int) (((long) mass * centerPercentageOfTotalMass) >> FP.FRACTION_BITS);
+		// above replaces float centerMass = mass * centerPercentageOfTotalMass;
+		
+		int nonCenterMass = mass - centerMass;
 		for (Particle particle : particles) {
-			particle.setMass((particle.getMass() / massSum) * nonCenterMass);
+			particle.setMass((int) (((long) ((int) (((long) particle.getMass() << FP.FRACTION_BITS) / massSum)) * nonCenterMass) >> FP.FRACTION_BITS));
+			// above replaces particle.setMass((particle.getMass() / massSum) * nonCenterMass);
 		}
 		centerParticle.setMass(centerMass); // centerParticle.setMass(0.1f);
 	}
@@ -194,11 +197,13 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	}
 	
 	/** @return the calculated (now) distance from the center particle to the particle farthest from it. */
-	public float getLargestRadius() {
-		float largestRadius = Float.MIN_VALUE;
+	public int getLargestRadius() {
+		int largestRadius = FP.MIN_VALUE;
 		for (Particle particle : particles) {
 			Vector2f diff = new Vector2f(particle.position.x - centerParticle.position.x, particle.position.y - centerParticle.position.y);
-			float radius = (float)Math.sqrt(diff.x * diff.x + diff.y * diff.y);
+			// FIXME this is much to much processing, just compare the squared version, then sqrt outside this loop
+			int radius = FP.sqrt((int) (((long) diff.x * diff.x) >> FP.FRACTION_BITS) + (int) (((long) diff.y * diff.y) >> FP.FRACTION_BITS));
+			// above replaces int radius = FP.sqrt(diff.x * diff.x + diff.y * diff.y);
 			if (radius > largestRadius) {
 				largestRadius = radius;
 			}
@@ -211,12 +216,12 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	 * Additionally, the mass of all particles is changed to account for this change.
 	 * @param centerPercentageOfTotalMass 0.05f is the default of 5%
 	 */
-	public void setCenterPercentageOfTotalMass(float centerPercentageOfTotalMass) {
+	public void setCenterPercentageOfTotalMass(int centerPercentageOfTotalMass) {
 		this.centerPercentageOfTotalMass = centerPercentageOfTotalMass;
 		setMass(mass);
 	}
 	
-	public float getCenterPercentageOfTotalMass() {
+	public int getCenterPercentageOfTotalMass() {
 		return centerPercentageOfTotalMass;
 	}
 
@@ -225,11 +230,11 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	 * orientation of all particles as the reference point for 0.
 	 * @return
 	 */
-	public float getRotation() {
+	public int getRotation() {
 		return getRelativeAngle(centerParticle.position, firstParticleAdded.position) - initialReferenceRotation;
 	}
 
-	public void setRotation(float rotation) {
+	public void setRotation(int rotation) {
 		rotateBy(rotation - getRotation(), centerParticle.position);
 	}
 	
@@ -376,7 +381,7 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	}
 
 	@Override
-	void integrate(float dt2) {
+	void integrate(int dt2) {
 		// because the parent composite will have all the particles/constraints added from here, nothing
 		// good will come from calling integrate more than once
 		if (parentComposite == null) {
@@ -387,8 +392,9 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 		}
 		centerParticle.update(dt2);
 		// handle rotational velocity
-		if (angularVelocity != 0f) {
-			rotateBy(angularVelocity * dt2, centerParticle.position);
+		if (angularVelocity != 0) {
+			rotateBy((int) (((long) angularVelocity * dt2) >> FP.FRACTION_BITS), centerParticle.position);
+			// above replaces rotateBy(angularVelocity * dt2, centerParticle.position);
 		}
 	}
 	
@@ -401,22 +407,29 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	}
 	
 	/** @return the relative angle in radians from the center to the point */
-	private float getRelativeAngle(Vector2f center, Vector2f point) {
+	private int getRelativeAngle(Vector2f center, Vector2f point) {
 		delta.x = point.x - center.x;
 		delta.y = point.y - center.y;
-		return (float)Math.atan2(delta.y, delta.x);
+		return FP.atan2(delta.y, delta.x);
 	}
 	
 	/** Rotates the Composite to an angle specified in radians, around a given center */
-	private void rotateBy(float angleRadians, Vector2f center) {
+	private void rotateBy(int angleRadians, Vector2f center) {
 		for (Particle particle : particles) {
 			Vector2f diff = particle.getCenter();
 			diff.x -= center.x;
 			diff.y -= center.y;
-			float radius = (float)Math.sqrt(diff.x * diff.x + diff.y * diff.y);
-			float angle = getRelativeAngle(center, particle.getCenter()) + angleRadians;
-			particle.position.x = (float)(Math.cos(angle) * radius) + center.x;
-			particle.position.y = (float)(Math.sin(angle) * radius) + center.y;
+			
+			int radius = FP.sqrt((int) (((long) diff.x * diff.x) >> FP.FRACTION_BITS) + (int) (((long) diff.y * diff.y) >> FP.FRACTION_BITS));
+			// above replaces float radius = (float)Math.sqrt(diff.x * diff.x + diff.y * diff.y);
+			
+			int angle = getRelativeAngle(center, particle.getCenter()) + angleRadians;
+			
+			particle.position.x = (int) (((long) FP.cos(angle) * radius) >> FP.FRACTION_BITS) + center.x;
+			// above replaces particle.position.x = (float)(Math.cos(angle) * radius) + center.x;
+			
+			particle.position.y = (int) (((long) FP.sin(angle) * radius) >> FP.FRACTION_BITS) + center.y;
+			// above replaces particle.position.y = (float)(Math.sin(angle) * radius) + center.y;
 		}
 	}
 	
@@ -430,7 +443,7 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 		centerParticle.setPosition(centerParticle.position.x, centerParticle.position.y);
 		if (autoConnectParticlesToCenter) {
 			for (Particle particle : particles) {
-				SimpleSpring connectorToCenter = new SimpleSpring(centerParticle, particle, 1f, false, 1f, 1f, false);
+				SimpleSpring connectorToCenter = new SimpleSpring(centerParticle, particle, FP.ONE, false, FP.ONE, FP.ONE, false);
 				add(connectorToCenter);
 			}
 		} else {
@@ -451,8 +464,8 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 	private Vector2f calculateCenter() {
 		Vector2f center = new Vector2f();
 		
-		float minX = Float.MAX_VALUE;
-		float maxX = Float.MIN_VALUE;
+		int minX = FP.MAX_VALUE;
+		int maxX = FP.MIN_VALUE;
 		for (Particle particle : particles) {
 			if (particle.position.x > maxX) {
 				maxX = particle.position.x;
@@ -461,10 +474,11 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 				minX = particle.position.x;
 			}
 		}
-		center.x = ((maxX - minX) / 2f) + minX;
+		center.x = (int) (((long) (maxX - minX) << FP.FRACTION_BITS) / FP.TWO) + minX;
+		// above replaces center.x = ((maxX - minX) / 2f) + minX;
 
-		float minY = Float.MAX_VALUE;
-		float maxY = Float.MIN_VALUE;
+		int minY = FP.MAX_VALUE;
+		int maxY = FP.MIN_VALUE;
 		for (Particle particle : particles) {
 			if (particle.position.y > maxY) {
 				maxY = particle.position.y;
@@ -473,7 +487,8 @@ public strictfp class Composite extends SimpullCollection implements IPhysicsObj
 				minY = particle.position.y;
 			}
 		}
-		center.y = ((maxY - minY) / 2f) + minY;
+		center.y = (int) (((long) (maxY - minY) << FP.FRACTION_BITS) / FP.TWO) + minY;
+		// above replaces center.y = ((maxY - minY) / 2f) + minY;
 		
 		return center;
 	}

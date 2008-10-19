@@ -1,6 +1,6 @@
 package simpull;
 
-import java.util.List;
+import java.util.ArrayList;
 
 import simpull.Composite.Finisher;
 
@@ -13,17 +13,17 @@ import simpull.Composite.Finisher;
  */
 public final class CustomBodyFinisher implements Finisher {
 	
-	private float bodyConstraintThickness;
-	private float bodyConstraintRectScale;
+	private int bodyConstraintThickness;
+	private int bodyConstraintRectScale;
 
-	public CustomBodyFinisher(float bodyConstraintThickness, float bodyConstraintRectScale) {
+	public CustomBodyFinisher(int bodyConstraintThickness, int bodyConstraintRectScale) {
 		this.bodyConstraintThickness = bodyConstraintThickness;
 		this.bodyConstraintRectScale = bodyConstraintRectScale;
 	}
 	
 	@Override
 	public void finish(Composite composite) {
-		List<Particle> particles = composite.getParticles();
+		ArrayList<Particle> particles = composite.getParticles();
 		int size = particles.size();
 		// First go around the outsides of the body and connect the particles.
 		// These spring will be collidable
@@ -32,7 +32,7 @@ public final class CustomBodyFinisher implements Finisher {
 			SimpleSpring connector = new SimpleSpring(
 					particles.get(i), 
 					particles.get(endIdx), 
-					1f, 
+					FP.ONE, 
 					true, 
 					bodyConstraintThickness, 
 					bodyConstraintRectScale, 
@@ -46,7 +46,7 @@ public final class CustomBodyFinisher implements Finisher {
 			for (int iParticle = 0; iParticle < size; ++iParticle) {
 				for (int iConnector = 0; iConnector < connectorsToDo; ++iConnector) {
 					SimpleSpring connector = new SimpleSpring(particles.get(iParticle), 
-							particles.get(iParticle + 2 + iConnector), 1f, false, 1f, 1f, false);
+							particles.get(iParticle + 2 + iConnector), FP.ONE, false, FP.ONE, FP.ONE, false);
 					composite.add(connector);
 				}
 				if (iParticle > 0) {

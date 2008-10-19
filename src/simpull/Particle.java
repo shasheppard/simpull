@@ -32,8 +32,8 @@ package simpull;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import simpull.events.Event;
 import simpull.events.EventHandler;
@@ -46,7 +46,7 @@ import simpull.events.sample.Events;
  * velocity. In other words, during collisions, the rotation is not altered, 
  * and the energy of the rotation is not applied to other colliding particles.
  */
-public strictfp class Particle implements IPhysicsObject, EventParticipator {
+public class Particle implements IPhysicsObject, EventParticipator {
 	
 	public Vector2f position;
 	/**
@@ -80,30 +80,30 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 	Vector2f samp = new Vector2f();
 	Interval interval;
 	
-	private float rotation;
-	private float mass;
+	private int rotation;
+	private int mass;
 
 	/** The forces acting on the particle */
 	private Vector2f forces = new Vector2f();
 	private boolean hasFirstCollisionOccurred;
 			
-	private float elasticity;
-	private float invMass;
-	private float friction;
+	private int elasticity;
+	private int invMass;
+	private int friction;
 	
 	private Vector2f center = new Vector2f();
 	private int multisample;
 	
-	private java.util.Queue<Event> eventQueue = new java.util.concurrent.ConcurrentLinkedQueue<Event>();
-	private Map<String, List<EventHandler>> eventHandlersMap = new HashMap<String, List<EventHandler>>();
+	private ConcurrentLinkedQueue<Event> eventQueue = new ConcurrentLinkedQueue<Event>();
+	private HashMap<String, List<EventHandler>> eventHandlersMap = new HashMap<String, List<EventHandler>>();
 		
 	public Particle (
-			float x, 
-			float y, 
+			int x, 
+			int y, 
 			boolean isFixed, 
-			float mass, 
-			float elasticity,
-			float friction) {
+			int mass, 
+			int elasticity,
+			int friction) {
 		interval = new Interval(0,0);
 		position = new Vector2f(x, y);
 		prevPosition = new Vector2f(x, y);
@@ -125,25 +125,27 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 	@Override
 	public void cleanup() {}
 
-	public float getRotation() {
+	public int getRotation() {
 		return rotation;
 	}
 
-	public void setRotation(float rotation) {
+	public void setRotation(int rotation) {
 		this.rotation = rotation;
 	}
 	
-	public float getMass() {
+	public int getMass() {
 		return mass;
 	}
 	
 	/** @throws IllegalArgumentException when mass is <= 0 */
-	public void setMass(float mass) {
+	public void setMass(int mass) {
 		if (mass <= 0) {
 			throw new IllegalArgumentException("mass may not be set <= 0"); 
 		}
 		this.mass = mass;
-		invMass = 1 / mass;
+		
+		invMass = (int) (((long) FP.ONE << FP.FRACTION_BITS) / mass);
+		// above replaces invMass = 1 / mass;
 	}	
 
 	/**
@@ -159,11 +161,11 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 	 * collision) will cause particles to bounce with energy greater than naturally 
 	 * possible.
 	 */ 
-	public float getElasticity() {
+	public int getElasticity() {
 		return elasticity; 
 	}
 	
-	public void setElasticity(float elasticity) {
+	public void setElasticity(int elasticity) {
 		this.elasticity = elasticity;
 	}
 	
@@ -218,13 +220,13 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 	 * the friction of fixed particles.
 	 * 
 	 */	
-	public float getFriction() {
+	public int getFriction() {
 		return friction; 
 	}
 
 	/** @throws IllegalArgumentException if the friction is set less than zero or greater than 1 */
-	public void setFriction(float friction) {
-		if (friction < 0 || friction > 1)  {
+	public void setFriction(int friction) {
+		if (friction < 0 || friction > FP.ONE)  {
 			throw new IllegalArgumentException("Legal friction must be >= 0 and <=1");
 		}
 		this.friction = friction;
@@ -249,7 +251,7 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 	 * @param x
 	 * @param y
 	 */
-	public void setPosition(float x, float y) {
+	public void setPosition(int x, int y) {
 		position.x = x;
 		position.y = y;
 		
@@ -258,23 +260,23 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 	}
 
 	/** @return the x position of this particle */
-	public float getX() {
+	public int getX() {
 		return position.x;
 	}
 
 	/** Set the x position of this particle and record the previous position for Verlet integration */
-	public void setX(float x) {
+	public void setX(int x) {
 		position.x = x;
 		prevPosition.x = x;	
 	}
 
 	/** @return the y position of this particle */
-	public float getY(){
+	public int getY(){
 		return position.y;
 	}
 
 	/** Set the y position of this particle and record the previous position for Verlet integration */
-	public void setY(float y) {
+	public void setY(int y) {
 		position.y = y;
 		prevPosition.y = y;	
 	}
@@ -308,7 +310,7 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 	}
 	
 	/** This method integrates the particle.  Called during the Simpull.step() cycle. */
-	public void update(float dt2) {
+	public void update(int dt2) {
 		if (isFixed) {
 			return;
 		}
@@ -320,12 +322,21 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 		}
 
 		Vector2f positionBefore = new Vector2f(position.x, position.y);			
-		forces.x *= dt2;
-		forces.y *= dt2;
+		
+		forces.x = (int) (((long) forces.x * dt2) >> FP.FRACTION_BITS);
+		// above replaces forces.x *= dt2;
+		
+		forces.y = (int) (((long) forces.y * dt2) >> FP.FRACTION_BITS);
+		// above replaces forces.y *= dt2;
+		
 		Vector2f velocity = getVelocity();
 		Vector2f netVelocity = new Vector2f(velocity.x + forces.x, velocity.y + forces.y);
-		netVelocity.x *= Simpull.damping;
-		netVelocity.y *= Simpull.damping;
+		
+		netVelocity.x = (int) (((long) netVelocity.x * Simpull.damping) >> FP.FRACTION_BITS);
+		// above replaces netVelocity.x *= Simpull.damping;
+		
+		netVelocity.y = (int) (((long) netVelocity.y * Simpull.damping) >> FP.FRACTION_BITS);
+		// above replaces netVelocity.y *= Simpull.damping;
 		
 		position.x += netVelocity.x;
 		position.y += netVelocity.y;
@@ -415,7 +426,7 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 	 * @param o
 	 */
 	void respondToCollision(Collision collision, Vector2f mtd, Vector2f velocity, Vector2f n,
-			float d, int o) {
+			int d, int o) {
 		addCollisionEvent(collision);
 		if (isFixed || !isSolid || !collision.you.isSolid) {
 			return;
@@ -434,7 +445,7 @@ public strictfp class Particle implements IPhysicsObject, EventParticipator {
 		}
 	}
 	
-	float getInvMass() {
+	int getInvMass() {
 		return isFixed ? 0 : invMass; 
 	}
 	

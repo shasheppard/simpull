@@ -29,12 +29,12 @@
 
 package simpull;
 	
-public strictfp class Rectangle extends Particle {
+public class Rectangle extends Particle {
 
-	float[] extents;
+	int[] extents;
 	Vector2f[] axes;
 	
-	private static final float defaultMass = 1f; // FIXME this default is unqualified
+	private static final int defaultMass = FP.ONE; // FIXME this default is unqualified
 	
 	/**
 	 * @param x The initial x position.
@@ -53,34 +53,37 @@ public strictfp class Rectangle extends Particle {
 	 * changed.
 	 */
 	public Rectangle (
-			float x, 
-			float y, 
-			float width, 
-			float height, 
-			float rotation/*= 0*/, 
+			int x, 
+			int y, 
+			int width, 
+			int height, 
+			int rotation/*= 0*/, 
 			boolean isFixed/*= false*/,
-			float mass/*= 1*/, 
-			float elasticity/*= 0.3*/,
-			float friction/*= 0*/) {
+			int mass/*= 1*/, 
+			int elasticity/*= 0.3*/,
+			int friction/*= 0*/) {
 		super(x, y, isFixed, mass, elasticity, friction);
-		extents = new float[] {width/2, height/2};
+		
+		extents = new int[] {(int) (((long) width << FP.FRACTION_BITS) / FP.TWO), (int) (((long) height << FP.FRACTION_BITS) / FP.TWO)};
+		// above replaces extents = new int[] {width/2, height/2};
+		
 		axes = new Vector2f[] {new Vector2f(0,0), new Vector2f(0,0)};
 		setRotation(rotation);
 	}
 
 	/** Convenience constructor to use the default values for what is not passed. */
 	public Rectangle (
-			float x, 
-			float y, 
-			float width, 
-			float height, 
-			float rotation/*= 0*/, 
+			int x, 
+			int y, 
+			int width, 
+			int height, 
+			int rotation/*= 0*/, 
 			boolean isFixed/*= false*/) {
-		this(x,y,width,height,rotation,isFixed,defaultMass,0.3f,0f);
+		this(x,y,width,height,rotation,isFixed,defaultMass,FP.from(0.3f),0);
 	}
 	
 	@Override
-	public void setRotation(float rotation) {
+	public void setRotation(int rotation) {
 		super.setRotation(rotation);
 		setAxes(rotation);
 	}
@@ -96,40 +99,50 @@ public strictfp class Rectangle extends Particle {
 		cleanup();
 	}
 	
-	public void setWidth(float width) {
-		extents[0] = width/2;
+	public void setWidth(int width) {
+		extents[0] = (int) (((long) width << FP.FRACTION_BITS) / FP.TWO);
+		// above replaces extents[0] = width/2;
 	}
 
-	public float getWidth() {
-		return extents[0] * 2;
+	public int getWidth() {
+		return (int) (((long) extents[0] * FP.TWO) >> FP.FRACTION_BITS);
+		// above replaces return extents[0] * 2;
 	}
 
-	public void setHeight(float height) {
-		extents[1] = height / 2;
+	public void setHeight(int height) {
+		extents[1] = (int) (((long) height << FP.FRACTION_BITS) / FP.TWO);
+		// above replaces extents[1] = height / 2;
 	}
 
-	public float getHeight() {
-		return extents[1] * 2;
+	public int getHeight() {
+		return (int) (((long) extents[1] * FP.TWO) >> FP.FRACTION_BITS);
+		// above replaces return extents[1] * 2;
 	}
 			
 	Interval getProjection(Vector2f axis) {
-		float radius =
-			extents[0] * Math.abs(axis.x * axes[0].x + axis.y * axes[0].y)+
-			extents[1] * Math.abs(axis.x * axes[1].x + axis.y * axes[1].y);
-		float c = samp.x * axis.x + samp.y * axis.y;
+		int radius = 
+			(int) (((long) extents[0] * (FP.abs((int) (((long) axis.x * axes[0].x) >> FP.FRACTION_BITS) + (int) (((long) axis.y * axes[0].y) >> FP.FRACTION_BITS)))) >> FP.FRACTION_BITS) + 
+			(int) (((long) extents[1] * (FP.abs((int) (((long) axis.x * axes[1].x) >> FP.FRACTION_BITS) + (int) (((long) axis.y * axes[1].y) >> FP.FRACTION_BITS)))) >> FP.FRACTION_BITS);
+// above replaces		float radius =
+//			extents[0] * Math.abs(axis.x * axes[0].x + axis.y * axes[0].y)+
+//			extents[1] * Math.abs(axis.x * axes[1].x + axis.y * axes[1].y);
+		
+		int c = (int) (((long) samp.x * axis.x) >> FP.FRACTION_BITS) + (int) (((long) samp.y * axis.y) >> FP.FRACTION_BITS);
+		// above replaces float c = samp.x * axis.x + samp.y * axis.y;
+		
 		interval.min = c - radius;
 		interval.max = c + radius;
 		return interval;
 	}
 
-	private void setAxes(float rotation) {
-		float s = (float)Math.sin(rotation);
-		float c = (float)Math.cos(rotation);
+	private void setAxes(int rotation) {
+		int sin = FP.sin(rotation);
+		int cos = FP.cos(rotation);
 		
-		axes[0].x = c;
-		axes[0].y = s;
-		axes[1].x = -s;
-		axes[1].y = c;
+		axes[0].x = cos;
+		axes[0].y = sin;
+		axes[1].x = -sin;
+		axes[1].y = cos;
 	}
 
 }

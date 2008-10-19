@@ -31,10 +31,10 @@ package simpull;
 	
 final class Interval {
 
-	float min;
-	float max;
+	int min;
+	int max;
 	
-	public Interval(float min, float max) {
+	public Interval(int min, int max) {
 		this.min = min;
 		this.max = max;
 	}

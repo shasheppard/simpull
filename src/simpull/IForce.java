@@ -31,6 +31,6 @@ package simpull;
 	
 public interface IForce {
 
-	Vector2f getValue(float invMass);
+	Vector2f getValue(int invMass);
 	
 }
