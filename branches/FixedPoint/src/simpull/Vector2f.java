@@ -29,47 +29,65 @@
 
 package simpull;
 	
-public final strictfp class Vector2f {
+public final class Vector2f {
 	
-	public float x;
-	public float y;
-
+	public int x;
+	public int y;
+	
 	public Vector2f() {}
 	
-	public Vector2f(float x, float y) {
+	public Vector2f(int x, int y) {
 		this.x = x;
 		this.y = y;
 	}
 
-	public Vector2f divEquals(float s) {
+	public Vector2f divEquals(int s) {
 		if (s == 0) {
-			s = 0.0001f;
+			s = FP.POINT_0001;
 		}
-		x /= s;
-		y /= s;
+		x = (int) (((long) x << FP.FRACTION_BITS) / s);
+		// above replaces x /= s;
+		
+		y = (int) (((long) y << FP.FRACTION_BITS) / s);
+		// above replaces y /= s;
 		return this;
 	}
 
 	public Vector2f normalize() {
-		 float magnitude = (float)Math.sqrt(x * x + y * y);
+		int magnitude = FP.sqrt((int) (((long) x * x) >> FP.FRACTION_BITS) + (int) (((long) y * y) >> FP.FRACTION_BITS));
+		 // above replaces float magnitude = (float)Math.sqrt(x * x + y * y);
 		 if (magnitude == 0) {
-			 magnitude = 0.0001f;
+			 magnitude = FP.POINT_0001;
 		 }
-		 float invMagnitude = 1 / magnitude;
+		 int invMagnitude = (int) (((long) FP.ONE << FP.FRACTION_BITS) / magnitude);
+		 // above replaces float invMagnitude = 1 / magnitude;
+		 
 		 Vector2f normalized = new Vector2f(x, y);
-		 normalized.x *= invMagnitude;
-		 normalized.y *= invMagnitude;
+		 
+		 normalized.x = (int) (((long) normalized.x * invMagnitude) >> FP.FRACTION_BITS);
+		 // above replaces normalized.x *= invMagnitude;
+		 
+		 normalized.y = (int) (((long) normalized.y * invMagnitude) >> FP.FRACTION_BITS);
+		 // above replaces normalized.y *= invMagnitude;
+		 
 		 return normalized;
 	}
 	
 	public Vector2f normalizeEquals() {
-		 float magnitude = (float)Math.sqrt(x * x + y * y);
+		int magnitude = FP.sqrt((int) (((long) x * x) >> FP.FRACTION_BITS) + (int) (((long) y * y) >> FP.FRACTION_BITS));
+		 // above replaces float magnitude = (float)Math.sqrt(x * x + y * y);
 		 if (magnitude == 0) {
-			 magnitude = 0.0001f;
+			 magnitude = FP.POINT_0001;
 		 }
-		 float invMagnitude = 1 / magnitude;
-		 x *= invMagnitude;
-		 y *= invMagnitude;
+		 int invMagnitude = (int) (((long) FP.ONE << FP.FRACTION_BITS) / magnitude);
+		 // above replaces float invMagnitude = 1 / magnitude;
+		 
+		 x = (int) (((long) x * invMagnitude) >> FP.FRACTION_BITS);
+		 // above replaces x *= invMagnitude;
+		 
+		 y = (int) (((long) y * invMagnitude) >> FP.FRACTION_BITS);
+		 // above replaces y *= invMagnitude;
+		 
 		 return this;
 	}
 		

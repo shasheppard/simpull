@@ -30,14 +30,13 @@
 package simpull;
 	
 import java.util.ArrayList;
-import java.util.List;
 
 import simpull.SimpleSpring.SpringParticle;
 
-public strictfp class SimpullCollection {
+public class SimpullCollection {
 	
-	protected List<Particle> particles = new ArrayList<Particle>();
-	protected List<IConstraint> constraints = new ArrayList<IConstraint>();
+	protected ArrayList<Particle> particles = new ArrayList<Particle>();
+	protected ArrayList<IConstraint> constraints = new ArrayList<IConstraint>();
 	protected boolean hasParent;
 	
 	private SpringParticle tmpCollisionParticle;
@@ -45,18 +44,18 @@ public strictfp class SimpullCollection {
 	///////////////////////////////////////////////////////////////////////////
 	// Collision variables
 	private static Vector2f collisionNormal = new Vector2f();
-	private static float collisionDepth = 0f;
+	private static int collisionDepth = 0;
 	private static Collision collisionA = new Collision();
 	private static Collision collisionB = new Collision();
 
-	public List<Particle> getParticles() {
+	public ArrayList<Particle> getParticles() {
 		return particles;
 	}
 	
 	/**
 	 * The Array of all AbstractConstraint instances added to the AbstractCollection
 	 */	
-	public List<IConstraint> getConstraints() {
+	public ArrayList<IConstraint> getConstraints() {
 		return constraints;	
 	}
 
@@ -137,7 +136,7 @@ public strictfp class SimpullCollection {
 		this.hasParent = hasParent;
 	}	
 	
-	void integrate(float dt2) {
+	void integrate(int dt2) {
 		for (Particle particle : particles) {
 			particle.update(dt2);	
 		}
@@ -254,41 +253,84 @@ public strictfp class SimpullCollection {
 	 *  -collisionNormal
 	 */
     private static final void initiateCollisionResponse() {
-    	Vector2f mtd = new Vector2f(collisionNormal.x * collisionDepth, 
-    			collisionNormal.y * collisionDepth);           
-        float totalElasticity = collisionA.me.getElasticity() + collisionB.me.getElasticity();
-        float sumInvMass = collisionA.me.getInvMass() + collisionB.me.getInvMass();
+    	Vector2f mtd = new Vector2f((int) (((long) collisionNormal.x * collisionDepth) >> FP.FRACTION_BITS), 
+    			(int) (((long) collisionNormal.y * collisionDepth) >> FP.FRACTION_BITS));
+// above replaces    	Vector2f mtd = new Vector2f(collisionNormal.x * collisionDepth, 
+//    			collisionNormal.y * collisionDepth);
+    	
+        int invMassA = collisionA.me.getInvMass(); // used alot below, avoid method calls and calc
+        int invMassB = collisionB.me.getInvMass(); // used alot below, avoid method calls and calc
+        
+    	int totalElasticity = collisionA.me.getElasticity() + collisionB.me.getElasticity();
+        int sumInvMass = invMassA + invMassB;
         
         // the total friction in a collision is combined but clamped to [0,1]
-        float totalFriction = MathUtil.clamp(1 - (collisionA.me.getFriction() + collisionB.me.getFriction()), 0, 1);
+        int totalFriction = FP.clamp(FP.ONE - (collisionA.me.getFriction() + collisionB.me.getFriction()), 0, FP.ONE);
         
         populateCollision(collisionA);
         populateCollision(collisionB);
 
         // calculate the coefficient of restitution as the normal component
-        float teaim = (totalElasticity + 1) * collisionA.me.getInvMass();
-        Vector2f bnaim = new Vector2f(collisionB.vNormal.x * teaim, collisionB.vNormal.y * teaim);
-        float bimaim = collisionB.me.getInvMass() - totalElasticity * collisionA.me.getInvMass();
-        Vector2f bnaim_plus_abimaim = new Vector2f(bnaim.x + collisionA.vNormal.x * bimaim, bnaim.y + collisionA.vNormal.y * bimaim);
+        int teaim = (int) (((long) (totalElasticity + FP.ONE) * invMassA) >> FP.FRACTION_BITS);
+        // above replaces float teaim = (totalElasticity + 1) * invMassA;
+        
+        Vector2f bnaim = new Vector2f((int) (((long) collisionB.vNormal.x * teaim) >> FP.FRACTION_BITS), 
+        		(int) (((long) collisionB.vNormal.y * teaim) >> FP.FRACTION_BITS));
+        // above replaces Vector2f bnaim = new Vector2f(collisionB.vNormal.x * teaim, collisionB.vNormal.y * teaim);
+        
+        int bimaim = invMassB - ((int) (((long) totalElasticity * invMassA) >> FP.FRACTION_BITS));
+        // above replaces float bimaim = invMassB - totalElasticity * invMassA;
+        
+        Vector2f bnaim_plus_abimaim = new Vector2f(bnaim.x + ((int) (((long) collisionA.vNormal.x * bimaim) >> FP.FRACTION_BITS)),
+        		bnaim.y + ((int) (((long) collisionA.vNormal.y * bimaim) >> FP.FRACTION_BITS)));
+        // above replaces Vector2f bnaim_plus_abimaim = new Vector2f(bnaim.x + collisionA.vNormal.x * bimaim, bnaim.y + collisionA.vNormal.y * bimaim);
+        
         Vector2f vNormalA = bnaim_plus_abimaim.divEquals(sumInvMass);
         
-        float tebim = (totalElasticity + 1) * collisionB.me.getInvMass();
-        Vector2f anaim = new Vector2f(collisionA.vNormal.x * tebim, collisionA.vNormal.y * tebim);
-        float aimbim = collisionA.me.getInvMass() - totalElasticity * collisionB.me.getInvMass();
-        Vector2f anaim_plus_abimaim = new Vector2f(anaim.x + collisionA.vNormal.x * aimbim, anaim.y + collisionA.vNormal.y * aimbim);
+        int tebim = (int) (((long) (totalElasticity + FP.ONE) * invMassB) >> FP.FRACTION_BITS);
+        // above replaces float tebim = (totalElasticity + 1) * invMassB;
+        
+        Vector2f anaim = new Vector2f((int) (((long) collisionA.vNormal.x * tebim) >> FP.FRACTION_BITS),
+        		(int) (((long) collisionA.vNormal.y * tebim) >> FP.FRACTION_BITS));
+        // above replaces Vector2f anaim = new Vector2f(collisionA.vNormal.x * tebim, collisionA.vNormal.y * tebim);
+        
+        int aimbim = invMassA - ((int) (((long) totalElasticity * invMassB) >> FP.FRACTION_BITS));
+        // above replaces float aimbim = invMassA - totalElasticity * invMassB;
+        
+        Vector2f anaim_plus_abimaim = new Vector2f(anaim.x + ((int) (((long) collisionA.vNormal.x * aimbim) >> FP.FRACTION_BITS)), 
+        		anaim.y + ((int) (((long) collisionA.vNormal.y * aimbim) >> FP.FRACTION_BITS)));
+        // above replaces Vector2f anaim_plus_abimaim = new Vector2f(anaim.x + collisionA.vNormal.x * aimbim, anaim.y + collisionA.vNormal.y * aimbim);
+        
         Vector2f vNormalB = anaim_plus_abimaim.divEquals(sumInvMass);
         
         // apply friction to the tangental component
-        collisionA.vTangent.x *= totalFriction;
-        collisionA.vTangent.y *= totalFriction;
-        collisionB.vTangent.x *= totalFriction;
-        collisionB.vTangent.y *= totalFriction;
+        collisionA.vTangent.x = (int) (((long) collisionA.vTangent.x * totalFriction) >> FP.FRACTION_BITS);
+        // above replaces collisionA.vTangent.x *= totalFriction;
+        
+        collisionA.vTangent.y = (int) (((long) collisionA.vTangent.y * totalFriction) >> FP.FRACTION_BITS);
+        // above replaces collisionA.vTangent.y *= totalFriction;
+        
+        collisionB.vTangent.x = (int) (((long) collisionB.vTangent.x * totalFriction) >> FP.FRACTION_BITS);
+        // above replaces collisionB.vTangent.x *= totalFriction;
+        
+        collisionB.vTangent.y = (int) (((long) collisionB.vTangent.y * totalFriction) >> FP.FRACTION_BITS);
+        // above replaces collisionB.vTangent.y *= totalFriction;
         
         // scale the mtd by the ratio of the masses. heavier particles move less
-        float aMassPct = collisionA.me.getInvMass() / sumInvMass;
-        Vector2f mtdA = new Vector2f(mtd.x * aMassPct, mtd.y * aMassPct);     
-        float bNMassPct = -collisionB.me.getInvMass() / sumInvMass;
-        Vector2f mtdB = new Vector2f(mtd.x * bNMassPct, mtd.y * bNMassPct);     
+        int aMassPct = (int) (((long) invMassA << FP.FRACTION_BITS) / sumInvMass);
+        // above replaces float aMassPct = invMassA / sumInvMass;
+        
+        Vector2f mtdA = new Vector2f((int) (((long) mtd.x * aMassPct) >> FP.FRACTION_BITS), 
+        		(int) (((long) mtd.y * aMassPct) >> FP.FRACTION_BITS));
+        // above replaces Vector2f mtdA = new Vector2f(mtd.x * aMassPct, mtd.y * aMassPct);     
+        
+        int bNMassPct = (int) (((long) -invMassB << FP.FRACTION_BITS) / sumInvMass);
+        // above replaces float bNMassPct = -invMassB / sumInvMass;
+        
+        Vector2f mtdB = new Vector2f((int) (((long) mtd.x * bNMassPct) >> FP.FRACTION_BITS), 
+        		(int) (((long) mtd.y * bNMassPct) >> FP.FRACTION_BITS));
+        // above replaces Vector2f mtdB = new Vector2f(mtd.x * bNMassPct, mtd.y * bNMassPct);     
+        
         // add the tangental component to the normal component for the new velocity 
         vNormalA.x += collisionA.vTangent.x;
         vNormalA.y += collisionA.vTangent.y;
@@ -296,8 +338,8 @@ public strictfp class SimpullCollection {
         vNormalB.y += collisionB.vTangent.y;
 
         // Make sure to pass a copy of the collision because these variables change all the time
-        collisionA.me.respondToCollision(Collision.copy(collisionA), mtdA, vNormalA, collisionNormal, collisionDepth, -1);
-        collisionB.me.respondToCollision(Collision.copy(collisionB), mtdB, vNormalB, collisionNormal, collisionDepth,  1);
+        collisionA.me.respondToCollision(Collision.copy(collisionA), mtdA, vNormalA, collisionNormal, collisionDepth, -FP.ONE);
+        collisionB.me.respondToCollision(Collision.copy(collisionB), mtdB, vNormalB, collisionNormal, collisionDepth,  FP.ONE);
     }
     
     /**
@@ -306,9 +348,15 @@ public strictfp class SimpullCollection {
      */
     private static final void populateCollision(Collision collisionToPopulate) {
 		Vector2f velocity = collisionToPopulate.me.getVelocity();
-		float vdotn = collisionNormal.x * velocity.x + collisionNormal.y * velocity.y;
+		
+		int vdotn = (int) (((long) collisionNormal.x * velocity.x) >> FP.FRACTION_BITS) + (int) (((long) collisionNormal.y * velocity.y) >> FP.FRACTION_BITS);
+		// above replaces float vdotn = collisionNormal.x * velocity.x + collisionNormal.y * velocity.y;
+		
 		collisionToPopulate.vNormal = 
-			new Vector2f(collisionNormal.x * vdotn, collisionNormal.y * vdotn);
+			new Vector2f((int) (((long) collisionNormal.x * vdotn) >> FP.FRACTION_BITS), (int) (((long) collisionNormal.y * vdotn) >> FP.FRACTION_BITS));
+// above replaces		collisionToPopulate.vNormal = 
+//			new Vector2f(collisionNormal.x * vdotn, collisionNormal.y * vdotn);
+		
 		collisionToPopulate.vTangent = 
 			new Vector2f(velocity.x - collisionToPopulate.vNormal.x, velocity.y - collisionToPopulate.vNormal.y);	
     }
@@ -335,12 +383,18 @@ public strictfp class SimpullCollection {
 		if (detectCollisionNormVsNorm(particleA,particleB)) {
 			return;
 		}
-		float s = 1 / (particleA.getMultisample() + 1); 
-		float t = s;
+		
+		int s = FP.ONE / (particleA.getMultisample() + 1);
+		// above replaces float s = 1 / (particleA.getMultisample() + 1); 
+		
+		int t = s;
 		
 		for (int i = 0; i <= particleA.getMultisample(); ++i) {
-			particleA.samp.x = particleA.prevPosition.x + t * (particleA.position.x - particleA.prevPosition.x); 
-			particleA.samp.y = particleA.prevPosition.y + t * (particleA.position.y - particleA.prevPosition.y);
+			particleA.samp.x = particleA.prevPosition.x + ((int) (((long) t * (particleA.position.x - particleA.prevPosition.x)) >> FP.FRACTION_BITS));
+			// above replaces particleA.samp.x = particleA.prevPosition.x + t * (particleA.position.x - particleA.prevPosition.x); 
+
+			particleA.samp.y = particleA.prevPosition.y + ((int) (((long) t * (particleA.position.y - particleA.prevPosition.y)) >> FP.FRACTION_BITS));
+			// above replaces particleA.samp.y = particleA.prevPosition.y + t * (particleA.position.y - particleA.prevPosition.y);
 			
 			if (testCollisionDelegate(particleA, particleB)) {
 				initiateCollisionResponse();
@@ -355,15 +409,24 @@ public strictfp class SimpullCollection {
 		if (detectCollisionNormVsNorm(particleA, particleB)) {
 			return;
 		}
-		float s = 1 / (particleA.getMultisample() + 1); 
-		float t = s;
+		
+		int s = FP.ONE / (particleA.getMultisample() + 1);
+		// above replaces float s = 1 / (particleA.getMultisample() + 1); 
+		
+		int t = s;
 		
 		for (int i = 0; i <= particleA.getMultisample(); ++i) {
-			particleA.samp.x = particleA.prevPosition.x + t * (particleA.position.x - particleA.prevPosition.x); 
-			particleA.samp.y = particleA.prevPosition.y + t * (particleA.position.y - particleA.prevPosition.y);
+			particleA.samp.x = particleA.prevPosition.x + ((int) (((long) t * (particleA.position.x - particleA.prevPosition.x)) >> FP.FRACTION_BITS));
+			// above replaces particleA.samp.x = particleA.prevPosition.x + t * (particleA.position.x - particleA.prevPosition.x); 
+
+			particleA.samp.y = particleA.prevPosition.y + ((int) (((long) t * (particleA.position.y - particleA.prevPosition.y)) >> FP.FRACTION_BITS));
+			// above replaces particleA.samp.y = particleA.prevPosition.y + t * (particleA.position.y - particleA.prevPosition.y);
 			
-			particleB.samp.x = particleB.prevPosition.x + t * (particleB.position.x - particleB.prevPosition.x); 
-			particleB.samp.y = particleB.prevPosition.y + t * (particleB.position.y - particleB.prevPosition.y);
+			particleB.samp.x = particleB.prevPosition.x + ((int) (((long) t * (particleB.position.x - particleB.prevPosition.x)) >> FP.FRACTION_BITS));
+			// above replaces particleB.samp.x = particleB.prevPosition.x + t * (particleB.position.x - particleB.prevPosition.x); 
+
+			particleB.samp.y = particleB.prevPosition.y + ((int) (((long) t * (particleB.position.y - particleB.prevPosition.y)) >> FP.FRACTION_BITS));
+			// above replaces particleB.samp.y = particleB.prevPosition.y + t * (particleB.position.y - particleB.prevPosition.y);
 			
 			if (testCollisionDelegate(particleA, particleB)) {
 				initiateCollisionResponse();
@@ -400,24 +463,24 @@ public strictfp class SimpullCollection {
 	 * for handling.
 	 */
 	private static final boolean testCollisionOBBvsOBB(Rectangle obbA, Rectangle obbB) {
-		collisionDepth = Float.POSITIVE_INFINITY;
+		collisionDepth = FP.MAX_VALUE;
 		for (int i = 0; i < 2; ++i) {
 			Vector2f axisA = obbA.axes[i];
-		    float depthA = testIntervals(
+		    int depthA = testIntervals(
 		    		obbA.getProjection(axisA), obbB.getProjection(axisA));
 		    if (depthA == 0) {
 		    	return false;
 		    }
 		    Vector2f axisB = obbB.axes[i];
-		    float depthB = testIntervals(
+		    int depthB = testIntervals(
 		    		obbA.getProjection(axisB), obbB.getProjection(axisB));
 		    if (depthB == 0) {
 		    	return false;
 		    }
-		    float absA = Math.abs(depthA);
-		    float absB = Math.abs(depthB);
+		    int absA = FP.abs(depthA);
+		    int absB = FP.abs(depthB);
 		    
-		    if (absA < Math.abs(collisionDepth) || absB < Math.abs(collisionDepth)) {
+		    if (absA < FP.abs(collisionDepth) || absB < FP.abs(collisionDepth)) {
 		    	boolean altb = absA < absB;
 		    	collisionNormal = altb ? axisA : axisB;
 		    	collisionDepth = altb ? depthA : depthB;
@@ -437,18 +500,18 @@ public strictfp class SimpullCollection {
 	 * then passes it off to the CollisionResolver.
 	 */
 	private static final boolean testCollisionOBBvsCircle(Rectangle obb, Circle circle) {
-		collisionDepth = Float.POSITIVE_INFINITY;
-		float []depths = new float[2];
+		collisionDepth = FP.MAX_VALUE;
+		int []depths = new int[2];
 		
 		// first go through the axes of the rectangle
 		for (int i = 0; i < 2; ++i) {
 			Vector2f boxAxis = obb.axes[i];
-			float depth = testIntervals(
+			int depth = testIntervals(
 					obb.getProjection(boxAxis), circle.getProjection(boxAxis));
 			if (depth == 0) {
 				return false;
 			}
-			if (Math.abs(depth) < Math.abs(collisionDepth)) {
+			if (FP.abs(depth) < FP.abs(collisionDepth)) {
 				collisionNormal = boxAxis;
 				collisionDepth = depth;
 			}
@@ -456,13 +519,16 @@ public strictfp class SimpullCollection {
 		}	
 		
 		// determine if the circle's center is in a vertex region
-		float radius = circle.getRadius();
-		if (Math.abs(depths[0]) < radius && Math.abs(depths[1]) < radius) {
+		int radius = circle.getRadius();
+		if (FP.abs(depths[0]) < radius && FP.abs(depths[1]) < radius) {
 			Vector2f vertex = findClosestVertexOnOBB(circle.samp, obb);
 
 			// get the distance from the closest vertex on rect to circle center
 			collisionNormal = new Vector2f(vertex.x - circle.samp.x, vertex.y - circle.samp.y);
-			float mag = (float)Math.sqrt(collisionNormal.x * collisionNormal.x + collisionNormal.y * collisionNormal.y);
+			
+			int mag = FP.sqrt((int) (((long) collisionNormal.x * collisionNormal.x) >> FP.FRACTION_BITS) + (int) (((long) collisionNormal.y * collisionNormal.y) >> FP.FRACTION_BITS));
+			// above replaces float mag = (float)Math.sqrt(collisionNormal.x * collisionNormal.x + collisionNormal.y * collisionNormal.y);
+			
 			collisionDepth = radius - mag;
 
 			if (collisionDepth > 0) {
@@ -487,16 +553,19 @@ public strictfp class SimpullCollection {
 	 * determines its axis and depth.
 	 */	
 	private static final boolean testCollisionCirclevsCircle(Circle circleA, Circle circleB) {
-		float depthX = testIntervals(circleA.getIntervalX(), circleB.getIntervalX());
+		int depthX = testIntervals(circleA.getIntervalX(), circleB.getIntervalX());
 		if (depthX == 0) {
 			return false;
 		}
-		float depthY = testIntervals(circleA.getIntervalY(), circleB.getIntervalY());
+		int depthY = testIntervals(circleA.getIntervalY(), circleB.getIntervalY());
 		if (depthY == 0) {
 			return false;
 		}
 		collisionNormal = new Vector2f(circleA.samp.x - circleB.samp.x, circleA.samp.y - circleB.samp.y);
-		float mag = (float)Math.sqrt(collisionNormal.x * collisionNormal.x + collisionNormal.y * collisionNormal.y);
+		
+		int mag = FP.sqrt((int) (((long) collisionNormal.x * collisionNormal.x) >> FP.FRACTION_BITS) + (int) (((long) collisionNormal.y * collisionNormal.y) >> FP.FRACTION_BITS));
+		// above replaces float mag = (float)Math.sqrt(collisionNormal.x * collisionNormal.x + collisionNormal.y * collisionNormal.y);
+		
 		collisionDepth = (circleA.getRadius() + circleB.getRadius()) - mag;
 		
 		if (collisionDepth > 0) {
@@ -512,17 +581,17 @@ public strictfp class SimpullCollection {
 	}
 
 	/** @return 0 if intervals do not overlap,  smallest depth if they do. */
-	private static final float testIntervals(Interval intervalA, Interval intervalB) {
+	private static final int testIntervals(Interval intervalA, Interval intervalB) {
 		if (intervalA.max < intervalB.min) {
 			return 0;
 		}
 		if (intervalB.max < intervalA.min) {
 			return 0;
 		}
-		float lenA = intervalB.max - intervalA.min;
-		float lenB = intervalB.min - intervalA.max;
+		int lenA = intervalB.max - intervalA.min;
+		int lenB = intervalB.min - intervalA.max;
 		
-		return (Math.abs(lenA) < Math.abs(lenB)) ? lenA : lenB;
+		return (FP.abs(lenA) < FP.abs(lenB)) ? lenA : lenB;
 	}
 	
 	/** @return the location of the closest vertex on obb to point */
@@ -530,15 +599,21 @@ public strictfp class SimpullCollection {
  		Vector2f d = new Vector2f(point.x - obb.samp.x, point.y - obb.samp.y);
  		Vector2f q = new Vector2f(obb.samp.x, obb.samp.y);
 		for (int i = 0; i < 2; ++i) {
-			float dist = d.x * obb.axes[i].x + d.y * obb.axes[i].y;
+			int dist = (int) (((long) d.x * obb.axes[i].x) >> FP.FRACTION_BITS) 
+					 + (int) (((long) d.y * obb.axes[i].y) >> FP.FRACTION_BITS);
+			// above replaces float dist = d.x * obb.axes[i].x + d.y * obb.axes[i].y;
+			
 			if (dist >= 0) {
 				dist = obb.extents[i];
-			}
-			else if (dist < 0) {
+			} else if (dist < 0) {
 				dist = -obb.extents[i];
 			}
-			q.x += obb.axes[i].x * dist;
-			q.y += obb.axes[i].y * dist;
+			
+			q.x += (int) (((long) obb.axes[i].x * dist) >> FP.FRACTION_BITS);
+			// above replaces q.x += obb.axes[i].x * dist;
+			
+			q.y += (int) (((long) obb.axes[i].y * dist) >> FP.FRACTION_BITS);
+			// above replaces q.y += obb.axes[i].y * dist;
 		}
 		return q;
 	}

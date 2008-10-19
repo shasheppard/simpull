@@ -33,13 +33,13 @@ package simpull;
  * A particle that simulates the behavior of a wheel.
  * A Wheel can be fixed but rotate freely.
  */ 
-public strictfp class Wheel extends Circle {
+public class Wheel extends Circle {
 
 	private Rim rim;
 	private Vector2f tan = new Vector2f();	
 	private Vector2f normSlip = new Vector2f();
 	private Vector2f orientation = new Vector2f();
-	private float traction;
+	private int traction;
 
 	/**
 	 * @param x The initial x position.
@@ -54,16 +54,16 @@ public strictfp class Wheel extends Circle {
 	 * @param traction The surface traction of the particle.
 	 */
 	public Wheel(
-			float x, 
-			float y, 
-			float radius, 
+			int x, 
+			int y, 
+			int radius, 
 			boolean isFixed/*= false*/, 
-			float mass/*= 1*/, 
-			float elasticity/*= 0.3*/,
-			float friction/*= 0*/,
-			float traction/*= 1*/) {
+			int mass/*= 1*/, 
+			int elasticity/*= 0.3*/,
+			int friction/*= 0*/,
+			int traction/*= 1*/) {
 		super(x,y,radius,isFixed, mass, elasticity, friction);
-		rim = new Rim(radius, 2); 	
+		rim = new Rim(radius, FP.TWO); 	
 		setTraction(traction);
 	}	
 
@@ -71,11 +71,11 @@ public strictfp class Wheel extends Circle {
 	 * The speed of the WheelParticle. You can alter this value to make the 
 	 * WheelParticle spin.
 	 */
-	public float getSpeed() {
+	public int getSpeed() {
 		return rim.getSpeed();
 	}
 	
-	public void setSpeed(float speed) {
+	public void setSpeed(int speed) {
 		rim.setSpeed(speed);
 	}
 
@@ -83,11 +83,11 @@ public strictfp class Wheel extends Circle {
 	 * The angular velocity of the WheelParticle. You can alter this value to make the 
 	 * WheelParticle spin.
 	 */
-	public float getAngularVelocity() {
+	public int getAngularVelocity() {
 		return rim.getAngularVelocity();
 	}
 	
-	public void setAngularVelocity(float angularVelocity) {
+	public void setAngularVelocity(int angularVelocity) {
 		rim.setAngularVelocity(angularVelocity);
 	}
 	
@@ -101,12 +101,12 @@ public strictfp class Wheel extends Circle {
 	 * friction is set high during a collision, the WheelParticle will move slowly as if
 	 * the surface was covered in glue.
 	 */		
-	public float getTraction() {
-		return 1 - traction;
+	public int getTraction() {
+		return FP.ONE - traction;
 	}
 
-	public void setTraction(float traction) {
-		this.traction = 1 - traction;
+	public void setTraction(int traction) {
+		this.traction = FP.ONE - traction;
 	}
 	
 	@Override
@@ -116,24 +116,31 @@ public strictfp class Wheel extends Circle {
 
 	/** @return the rotation of the wheel in radians. */
 	@Override
-	public float getRotation() {
+	public int getRotation() {
 		orientation.x = rim.position.x;
 		orientation.y = rim.position.y;
-		return (float)(Math.atan2(orientation.y, orientation.x) + Math.PI);
+
+		return FP.atan2(orientation.y, orientation.x) + FP.PI;
 	} 
 
 	@Override
-	public void update(float dt) {
-		super.update(dt);
-		rim.update(dt);
+	public void update(int dt2) {
+		super.update(dt2);
+		rim.update(dt2);
 	}
 
 	@Override
 	void respondToCollision(Collision collision, Vector2f mtd, Vector2f velocity, Vector2f normal,
-			float depth, int order) {
+			int depth, int order) {
 		super.respondToCollision(collision, mtd, velocity, normal, depth, order);
-		int sign = MathUtil.sign(depth * order);
-		Vector2f surfaceNormal = new Vector2f(normal.x * sign, normal.y * sign);
+		
+		int sign = FP.sign((int) (((long) depth * order) >> FP.FRACTION_BITS)); // returns -1 or 1 integer, not fixed point
+		sign = FP.from(sign);
+		// above replaces int sign = MathUtil.sign(depth * order);
+		
+		Vector2f surfaceNormal = new Vector2f((int) (((long) normal.x * sign) >> FP.FRACTION_BITS), (int) (((long) normal.y * sign) >> FP.FRACTION_BITS));
+		// above replaces Vector2f surfaceNormal = new Vector2f(normal.x * sign, normal.y * sign);
+		
 		resolve(surfaceNormal);
 	}
 	
@@ -147,9 +154,12 @@ public strictfp class Wheel extends Circle {
 		tan = tan.normalize();
 
 		// velocity of the wheel's surface 
-		float rimSpeed = rim.getSpeed();
+		int rimSpeed = rim.getSpeed();
+		
 		Vector2f wheelSurfaceVelocity = 
-			new Vector2f(tan.x * rimSpeed, tan.y * rimSpeed);
+			new Vector2f((int) (((long) tan.x * rimSpeed) >> FP.FRACTION_BITS), (int) (((long) tan.y * rimSpeed) >> FP.FRACTION_BITS));
+// above replaces 		Vector2f wheelSurfaceVelocity = 
+//			new Vector2f(tan.x * rimSpeed, tan.y * rimSpeed);
 		
 		// the velocity of the wheel's surface relative to the ground
 		Vector2f velocity = getVelocity();
@@ -157,22 +167,35 @@ public strictfp class Wheel extends Circle {
 			new Vector2f(velocity.x + wheelSurfaceVelocity.x, velocity.y + wheelSurfaceVelocity.y);
 	
 		// the wheel's combined velocity projected onto the contact normal
-		float cp = combinedVelocity.x * surfaceNormal.y - combinedVelocity.y * surfaceNormal.x;
+		int cp = (int) (((long) combinedVelocity.x * surfaceNormal.y) >> FP.FRACTION_BITS) - (int) (((long) combinedVelocity.y * surfaceNormal.x) >> FP.FRACTION_BITS);
+		// above replaces float cp = combinedVelocity.x * surfaceNormal.y - combinedVelocity.y * surfaceNormal.x;
 
 		// set the wheel's spin speed to track the ground
-		tan.x *= cp;
-		tan.y *= cp;
+		tan.x = (int) (((long) tan.x * cp) >> FP.FRACTION_BITS);
+		// above replaces tan.x *= cp;
+		
+		tan.y = (int) (((long) tan.y * cp) >> FP.FRACTION_BITS);
+		// above replaces tan.y *= cp;
+		
 		Vector2f rmt = new Vector2f(rim.position.x - tan.x, rim.position.y - tan.y);
 		rim.prevPosition.x = rmt.x;
 		rim.prevPosition.y = rmt.y;
 
 		// some of the wheel's torque is removed and converted into linear displacement
-		float slipSpeed = (1 - traction) * rim.getSpeed();
-		normSlip.x = slipSpeed * surfaceNormal.y;
-		normSlip.y = slipSpeed * surfaceNormal.x;
+		int slipSpeed = (int) (((long) (FP.ONE - traction) * rimSpeed) >> FP.FRACTION_BITS);
+		// above replaces float slipSpeed = (1 - traction) * rim.getSpeed();
+		
+		normSlip.x = (int) (((long) slipSpeed * surfaceNormal.y) >> FP.FRACTION_BITS);
+		// above replaces normSlip.x = slipSpeed * surfaceNormal.y;
+		
+		normSlip.y = (int) (((long) slipSpeed * surfaceNormal.x) >> FP.FRACTION_BITS);
+		// above replaces normSlip.y = slipSpeed * surfaceNormal.x;
+		
 		position.x += normSlip.x;
 		position.y += normSlip.y;
-		rim.setSpeed(rim.getSpeed() * traction);	
+		
+		rim.setSpeed((int) (((long) rimSpeed * traction) >> FP.FRACTION_BITS));
+		// above replaces rim.setSpeed(rim.getSpeed() * traction);	
 	}
 
 	/**
@@ -180,18 +203,18 @@ public strictfp class Wheel extends Circle {
 	 * The rim particle is simulated in a coordsystem relative to the wheel's 
 	 * center, not in worldspace.
 	 */
-	strictfp class Rim {
+	class Rim {
 		Vector2f position;
 		Vector2f prevPosition;
 		Vector2f tan = new Vector2f();
 
-		private float wheelRadius;
-		private float angularVelocity;
-		private float speed;
-		private float maxTorque;
+		private int wheelRadius;
+		private int angularVelocity;
+		private int speed;
+		private int maxTorque;
 		
 		
-		public Rim(float radius, float maxTorque) {
+		public Rim(int radius, int maxTorque) {
 			position = new Vector2f(radius, 0);
 			prevPosition = new Vector2f(0, 0);
 			
@@ -202,23 +225,23 @@ public strictfp class Wheel extends Circle {
 			wheelRadius = radius;		
 		}
 		
-		float getSpeed() {
+		int getSpeed() {
 			return speed;
 		}
 		
-		void setSpeed(float speed) {
+		void setSpeed(int speed) {
 			this.speed = speed;
 		}
 		
-		float getAngularVelocity() {
+		int getAngularVelocity() {
 			return angularVelocity;
 		}
 		
-		void setAngularVelocity(float angularVelocity) {
+		void setAngularVelocity(int angularVelocity) {
 			this.angularVelocity = angularVelocity;
 		}
 		
-		void update(float dt) {
+		void update(int dt2) {
 			//clamp torques to valid range
 			speed = Math.max(-maxTorque, Math.min(maxTorque, speed + angularVelocity));
 
@@ -228,27 +251,45 @@ public strictfp class Wheel extends Circle {
 			tan.y =  position.x;
 
 			//normalize so we can scale by the rotational speed
-			float len = (float)Math.sqrt(tan.x * tan.x + tan.y * tan.y);
-			tan.x /= len;
-			tan.y /= len;
+			int len = FP.sqrt((int) (((long) tan.x * tan.x) >> FP.FRACTION_BITS) + (int) (((long) tan.y * tan.y) >> FP.FRACTION_BITS));
+			// above replaces float len = (float)Math.sqrt(tan.x * tan.x + tan.y * tan.y);
+			
+			tan.x = (int) (((long) tan.x << FP.FRACTION_BITS) / len);
+			// above replaces tan.x /= len;
+			
+			tan.y = (int) (((long) tan.y << FP.FRACTION_BITS) / len);
+			// above replaces tan.y /= len;
 
-			position.x += speed * tan.x;
-			position.y += speed * tan.y;
+			position.x += (int) (((long) speed * tan.x) >> FP.FRACTION_BITS);
+			// above replaces position.x += speed * tan.x;
+			
+			position.y += (int) (((long) speed * tan.y) >> FP.FRACTION_BITS);
+			// above replaces position.y += speed * tan.y;
 
-			float prevX = prevPosition.x;
-			float prevY = prevPosition.y;
-			float x = prevPosition.x = position.x;
-			float y = prevPosition.y = position.y;
+			int prevX = prevPosition.x;
+			int prevY = prevPosition.y;
+			int x = prevPosition.x = position.x;
+			int y = prevPosition.y = position.y;
+			
 			// Set position using the velocity multiplied by the damping
-			position.x += Simpull.damping * (x - prevX);
-			position.y += Simpull.damping * (y - prevY);	
+			position.x += (int) (((long) Simpull.damping * (x - prevX)) >> FP.FRACTION_BITS);
+			// above replaces position.x += Simpull.damping * (x - prevX);
+			
+			position.y += (int) (((long) Simpull.damping * (y - prevY)) >> FP.FRACTION_BITS);
+			//above replaces position.y += Simpull.damping * (y - prevY);	
 
 			// hold the rim particle in place
-			float clen = (float)Math.sqrt(position.x * position.x + position.y * position.y);
-			float diff = (clen - wheelRadius) / clen;
+			int clen = (int) (((long) position.x * position.x) >> FP.FRACTION_BITS) + (int) (((long) position.y * position.y) >> FP.FRACTION_BITS);
+			// above replaces float clen = (float)Math.sqrt(position.x * position.x + position.y * position.y);
+			
+			int diff = (int) (((long) (clen - wheelRadius) << FP.FRACTION_BITS) / clen);
+			// above replaces float diff = (clen - wheelRadius) / clen;
 
-			position.x -= position.x * diff;
-			position.y -= position.y * diff;
+			position.x -= (int) (((long) position.x * diff) >> FP.FRACTION_BITS);
+			// above replaces position.x -= position.x * diff;
+			
+			position.y -= (int) (((long) position.y * diff) >> FP.FRACTION_BITS);
+			// above replaces position.y -= position.y * diff;
 		}
 		
 	}

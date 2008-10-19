@@ -29,15 +29,13 @@
 
 package simpull;
 	
-/**
- * A Spring-like constraint that connects two particles
- */
-public strictfp class Spring extends SimpleSpring {
+/** A Spring-like constraint that connects two particles */
+public class Spring extends SimpleSpring {
 	
-	private float min;
-	private float mid;
-	private float max;
-	private float force;
+	private int min;
+	private int mid;
+	private int max;
+	private int force;
 	
 	/**
 	 * 
@@ -53,12 +51,12 @@ public strictfp class Spring extends SimpleSpring {
 			Particle p1, 
 			Particle p2,
 			boolean isCollidable,
-			float min, 
-			float mid, 
-			float max, 
-			float force) {
+			int min, 
+			int mid, 
+			int max, 
+			int force) {
 		// FIXME: the last 3 parameters are hardcoded here for a quick dev test.
-		super(p1, p2, isCollidable, 2, 1, true);
+		super(p1, p2, isCollidable, FP.TWO, FP.ONE, true);
 		this.min = min;
 		this.mid = mid;
 		this.max = max;
@@ -68,19 +66,23 @@ public strictfp class Spring extends SimpleSpring {
 	@Override
 	public void resolve() {
 	    // Get vector from other verlet to me
-	    Vector2f diff = 
-	    	new Vector2f(particle1.position.x - particle2.position.x, 
-	    			particle1.position.y - particle2.position.y);
+	    Vector2f diff = new Vector2f(particle1.position.x - particle2.position.x, 
+    		particle1.position.y - particle2.position.y);
 	    Vector2f mid = 
 	    	new Vector2f(particle1.position.x + particle2.position.x, 
 	    			particle1.position.y + particle2.position.y);
-	    mid.divEquals(2.0f);
+	    mid.divEquals(FP.TWO);
 
-	    float radius = (float)Math.sqrt(diff.x * diff.x + diff.y * diff.y);
+	    int radius = FP.sqrt((int) (((long) diff.x * diff.x) >> FP.FRACTION_BITS) + (int) (((long) diff.y * diff.y) >> FP.FRACTION_BITS));
+	    // above replaces float radius = (float)Math.sqrt(diff.x * diff.x + diff.y * diff.y);
+	    
 	    // handle case where points are the same
-	    if (radius == 0.0f) {
-	        diff = new Vector2f(1.0f, 0.0f);
-	        radius = (float)Math.sqrt(diff.x * diff.x + diff.y * diff.y);
+	    if (radius == 0) {
+	        diff.x = FP.ONE;
+	        diff.y = 0;
+
+		    radius = FP.ONE; // the original calculation was completely useless, we know the radius is 1
+		    // above replaces radius = (float)Math.sqrt(diff.x * diff.x + diff.y * diff.y);
 	    }
 	    if (radius < min) {
 	    	radius = min;
@@ -90,17 +92,22 @@ public strictfp class Spring extends SimpleSpring {
 
 	    // Scale it to the required radius
 	    Vector2f diffNormalized = diff.normalize();
-	    diff.x = diffNormalized.x * radius;
-	    diff.y = diffNormalized.y * radius;
+	    
+	    diff.x = (int) (((long) diffNormalized.x * radius) >> FP.FRACTION_BITS);
+	    // above replaces diff.x = diffNormalized.x * radius;
+	    
+	    diff.y = (int) (((long) diffNormalized.y * radius) >> FP.FRACTION_BITS);
+	    // above replaces diff.y = diffNormalized.y * radius;
+	    
 	    // and set the point
-    	diff.divEquals(2f);
+    	diff.divEquals(FP.TWO);
         particle1.position.x = mid.x + diff.x; 
         particle1.position.y = mid.y + diff.y; 
 
         particle2.position.x = mid.x - diff.x; 
         particle2.position.y = mid.y - diff.y; 
 	    
-	    // The forces added here will be applied in the following APEninge.step() call.
+	    // The forces added here will be applied in the following Simpull.step() call.
 	    IForce p1Force = getForce(particle1, particle2);
 	    particle1.addForce(p1Force);
 	    
@@ -113,20 +120,31 @@ public strictfp class Spring extends SimpleSpring {
 	    	new Vector2f(particleA.position.x - particleB.position.x, 
 	    		particleA.position.y - particleB.position.y);
 	    // handle case where points are the same
-	    if (Math.sqrt(diff.x * diff.x + diff.y * diff.y) < 0.000001) {
-	    	diff.x = 1f;
-	    	diff.y = 0f;
+	    // FIXME this is horrible on performance and there is a quick/dirty way of determining this
+	    int radius = FP.sqrt((int) (((long) diff.x * diff.x) >> FP.FRACTION_BITS) + (int) (((long) diff.y * diff.y) >> FP.FRACTION_BITS));
+	    if (radius < FP.POINT_000001) {
+	    	diff.x = FP.ONE;
+	    	diff.y = 0;
 	    }
 	    diff.normalizeEquals();
+	    
 	    Vector2f middle = new Vector2f(
-	    		particleB.position.x + (diff.x * mid), 
-	    		particleB.position.y + (diff.y * mid));
+	    		particleB.position.x + ((int) (((long) diff.x * mid) >> FP.FRACTION_BITS)),
+	    		particleB.position.y + ((int) (((long) diff.y * mid) >> FP.FRACTION_BITS)));
+// above replaces	    Vector2f middle = new Vector2f(
+//	    		particleB.position.x + (diff.x * mid), 
+//	    		particleB.position.y + (diff.y * mid));
+	    
 	    Vector2f distToMiddle = new Vector2f(
 	    		middle.x - particleA.position.x,
 	    		middle.y - particleA.position.y);
+	    
 	    return new VectorForce(true, 
-	    		distToMiddle.x * force, 
-	    		distToMiddle.y * force);
+	    		(int) (((long) distToMiddle.x * force) >> FP.FRACTION_BITS),
+	    		(int) (((long) distToMiddle.y * force) >> FP.FRACTION_BITS));
+// above replaces	    return new VectorForce(true, 
+//	    		distToMiddle.x * force, 
+//	    		distToMiddle.y * force);
 	}
 
 }

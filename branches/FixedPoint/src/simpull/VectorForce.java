@@ -35,16 +35,16 @@ public class VectorForce implements IForce {
 	private Vector2f force;	
 	private boolean useMass;
 	
-	public VectorForce(boolean useMass, float forceX, float forceY) {
+	public VectorForce(boolean useMass, int forceX, int forceY) {
 		this.useMass = useMass;
 		force = new Vector2f(forceX, forceY);
 	}
 	
-	public void setVx(float x) {
+	public void setVx(int x) {
 		force.x = x;
 	}
 	
-	public void setVy(float y) {
+	public void setVy(int y) {
 		force.y = y;
 	}
 	
@@ -52,10 +52,13 @@ public class VectorForce implements IForce {
 		this.useMass = useMass;
 	}
 	
-	public Vector2f getValue(float invmass) {
+	public Vector2f getValue(int invmass) {
 		if (useMass) { 
-			force.x *= invmass;
-			force.y *= invmass;
+			force.x = (int) (((long) force.x * invmass) >> FP.FRACTION_BITS);
+			// above replaces force.x *= invmass;
+			
+			force.y = (int) (((long) force.y * invmass) >> FP.FRACTION_BITS);
+			// above replaces force.y *= invmass;
 		}
 		return force;
 	}
