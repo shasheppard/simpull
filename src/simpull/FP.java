@@ -44,7 +44,6 @@ public final class FP {
     public static final int TWO = from(2); // FIXME this can probably be replaced by bitshift by 1 for division by 2
 	public static final int POINT_0001 = from(0.0001f);
 	public static final int POINT_000001 = from(0.000001f);
-	public static final int POINT_5 = from(0.5f);
     public static final int ONE_HALF = ONE >> 1;
     public static final int MAX_VALUE = (1 << 31) - 1;
     public static final int MIN_VALUE = -(1 << 31);
@@ -69,6 +68,16 @@ public final class FP {
     public static final int ONE_HALF_PI = (int)Math.round(.5 * Math.PI * ONE);
     public static final int ONE_HALF_PI_MINUS_TWO_PI = ONE_HALF_PI - TWO_PI;
     public static final int E = (int)Math.round(Math.E * ONE);
+    
+    private static final int PYTHAGOREAN_SZE = 850;
+    public static final int[][] pythagorean = new int[PYTHAGOREAN_SZE][PYTHAGOREAN_SZE];
+    static {
+		for (int a = 0; a < PYTHAGOREAN_SZE; ++a) {
+			for (int b = 0; b < PYTHAGOREAN_SZE; ++b) {
+				pythagorean[a][b] = (int)Math.sqrt(a * a + b * b);
+			}
+		}
+    }
     
     /** Number of fractional bits used for some internal calculations */
     private static final int INTERNAL_BITS = 24;
@@ -201,11 +210,9 @@ public final class FP {
         // Helps with rotation appearance near 90, 180, 270, 360, etc.
         if (abs(fixedPoint) < 32) {
             return 0;
-        }
-        else if (abs(fixedPoint - ONE_HALF_PI) < 32) {
+        } else if (abs(fixedPoint - ONE_HALF_PI) < 32) {
             return ONE;
-        }
-        else if (abs(fixedPoint + ONE_HALF_PI) < 32) {
+        } else if (abs(fixedPoint + ONE_HALF_PI) < 32) {
             return -ONE;
         }
         
@@ -213,19 +220,19 @@ public final class FP {
         int fxSquared = (int)(((long)fixedPoint * fixedPoint) >> FRACTION_BITS);
         // above replaces int fxSquared = (int)(((long)fixedPoint * fixedPoint) >> FRACTION_BITS);
 
-        int d = (int)(((long)(1 << INTERNAL_BITS) / (2*3*4*5*6*7*8*9) * fxSquared) >> FRACTION_BITS);
+        int d = (int)(((long)((1 << INTERNAL_BITS) / (2*3*4*5*6*7*8*9)) * fxSquared) >> FRACTION_BITS);
         // above replaces int d = mul((1 << INTERNAL_BITS) / (2*3*4*5*6*7*8*9), fxSquared);
 
-        int c = (int) (((long) d - (1 << INTERNAL_BITS) / (2*3*4*5*6*7) * fxSquared) >> FRACTION_BITS);
+        int c = (int) (((long) (d - (1 << INTERNAL_BITS) / (2*3*4*5*6*7)) * fxSquared) >> FRACTION_BITS);
         // above replaces int c = mul(d - (1 << INTERNAL_BITS) / (2*3*4*5*6*7), fxSquared);
         
-        int b = (int) (((long) c + (1 << INTERNAL_BITS) / (2*3*4*5) * fxSquared) >> FRACTION_BITS);
+        int b = (int) (((long) (c + (1 << INTERNAL_BITS) / (2*3*4*5)) * fxSquared) >> FRACTION_BITS);
         // above replaced int b = mul(c + (1 << INTERNAL_BITS) / (2*3*4*5), fxSquared);
         
-        int a = (int) (((long) b - (1 << INTERNAL_BITS) / (2*3) * fxSquared) >> FRACTION_BITS);
+        int a = (int) (((long) (b - (1 << INTERNAL_BITS) / (2*3)) * fxSquared) >> FRACTION_BITS);
         // above replaces int a = mul(b - (1 << INTERNAL_BITS) / (2*3), fxSquared);
         
-        int sine = (int) (((long) a + (1 << INTERNAL_BITS) * fixedPoint) >> FRACTION_BITS);
+        int sine = (int) (((long) (a + (1 << INTERNAL_BITS)) * fixedPoint) >> FRACTION_BITS);
         // above replaces int sine = mul(a + (1 << INTERNAL_BITS), fixedPoint);
         
         return sine >> INTERNAL_BITS_MINUS_FRACTION_BITS;

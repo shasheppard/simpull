@@ -26,8 +26,8 @@ public class SimpullTest extends JFrame implements KeyListener {
 
 	public SimpullTest() {
 		super("simpull - stress test");
-		Simpull.init(1/4f);
-		Simpull.add(new VectorForce(false, 0f, 3f));
+		Simpull.init(FP.from(1/4f));
+		Simpull.add(new VectorForce(false, 0, FP.from(3f)));
 		System.out.println("loading...");
 		load();
 		// After all physics objects added, the group can be added to the engine

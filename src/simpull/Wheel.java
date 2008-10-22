@@ -149,7 +149,6 @@ public class Wheel extends Circle {
 		// this is the tangent vector at the rim particle
 		tan.x = -rim.position.y;
 		tan.y = rim.position.x;
-
 		// normalize so we can scale by the rotational speed
 		tan = tan.normalize();
 
@@ -279,7 +278,7 @@ public class Wheel extends Circle {
 			//above replaces position.y += Simpull.damping * (y - prevY);	
 
 			// hold the rim particle in place
-			int clen = (int) (((long) position.x * position.x) >> FP.FRACTION_BITS) + (int) (((long) position.y * position.y) >> FP.FRACTION_BITS);
+			int clen = FP.sqrt((int) (((long) position.x * position.x) >> FP.FRACTION_BITS) + (int) (((long) position.y * position.y) >> FP.FRACTION_BITS));
 			// above replaces float clen = (float)Math.sqrt(position.x * position.x + position.y * position.y);
 			
 			int diff = (int) (((long) (clen - wheelRadius) << FP.FRACTION_BITS) / clen);

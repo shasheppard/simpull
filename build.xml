@@ -39,12 +39,6 @@
 		<copy todir="${build.dir}/dist">
             <fileset dir="${src.dir}" includes="**/*" excludes="**/*.java" />
 		</copy>
-        <!--
-		<java classname="mil.af.ilss.suidm.util.gen.Main">
-			<arg value="-h"/>
-			<classpath location="${build.dir}/dist" />
-       	</java>
-        -->
 	</target>
 
     <!-- JAVADOC TARGETS -->
