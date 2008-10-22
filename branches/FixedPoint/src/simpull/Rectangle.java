@@ -64,8 +64,7 @@ public class Rectangle extends Particle {
 			int friction/*= 0*/) {
 		super(x, y, isFixed, mass, elasticity, friction);
 		
-		extents = new int[] {(int) (((long) width << FP.FRACTION_BITS) / FP.TWO), (int) (((long) height << FP.FRACTION_BITS) / FP.TWO)};
-		// above replaces extents = new int[] {width/2, height/2};
+		extents = new int[] {width >> 1, height >> 1};
 		
 		axes = new Vector2f[] {new Vector2f(0,0), new Vector2f(0,0)};
 		setRotation(rotation);
@@ -100,8 +99,7 @@ public class Rectangle extends Particle {
 	}
 	
 	public void setWidth(int width) {
-		extents[0] = (int) (((long) width << FP.FRACTION_BITS) / FP.TWO);
-		// above replaces extents[0] = width/2;
+		extents[0] = width >> 1;
 	}
 
 	public int getWidth() {
@@ -110,8 +108,7 @@ public class Rectangle extends Particle {
 	}
 
 	public void setHeight(int height) {
-		extents[1] = (int) (((long) height << FP.FRACTION_BITS) / FP.TWO);
-		// above replaces extents[1] = height / 2;
+		extents[1] = height >> 1;
 	}
 
 	public int getHeight() {

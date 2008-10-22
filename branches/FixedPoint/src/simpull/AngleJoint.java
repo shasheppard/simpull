@@ -171,15 +171,9 @@ public class AngleJoint extends SimpleSpring {
 		
 		int angChange = 0;
 		
-		
-		int lowMid = (int) (((long) (maxAngle - minAngle) << FP.FRACTION_BITS) / FP.TWO);
-		// above replaces float lowMid = (maxAngleFX - minAngleFX) / 2;
-
-		int highMid = (int) (((long) (maxAngle + minAngle) << FP.FRACTION_BITS) / FP.TWO);
-		// above replaces float highMid = (maxAngleFX + minAngleFX) / 2;
- 		
-		int breakAng = (int) (((long) (maxBreakAngle - minBreakAngle) << FP.FRACTION_BITS) / FP.TWO);
-		// above replaces float breakAng = (maxBreakAngleFX - minBreakAngleFX) / 2;
+		int lowMid = (maxAngle - minAngle) >> 1;
+		int highMid = (maxAngle + minAngle) >> 1;
+		int breakAng = (maxBreakAngle - minBreakAngle) >> 1;
 		
  		int newDiff = highMid - angDiff;
  		// make sure angle is within range for later calcs

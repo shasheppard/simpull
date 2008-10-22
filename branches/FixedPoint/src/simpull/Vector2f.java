@@ -54,23 +54,23 @@ public final class Vector2f {
 	}
 
 	public Vector2f normalize() {
-		int magnitude = FP.sqrt((int) (((long) x * x) >> FP.FRACTION_BITS) + (int) (((long) y * y) >> FP.FRACTION_BITS));
-		 // above replaces float magnitude = (float)Math.sqrt(x * x + y * y);
-		 if (magnitude == 0) {
-			 magnitude = FP.POINT_0001;
-		 }
-		 int invMagnitude = (int) (((long) FP.ONE << FP.FRACTION_BITS) / magnitude);
-		 // above replaces float invMagnitude = 1 / magnitude;
-		 
-		 Vector2f normalized = new Vector2f(x, y);
-		 
-		 normalized.x = (int) (((long) normalized.x * invMagnitude) >> FP.FRACTION_BITS);
-		 // above replaces normalized.x *= invMagnitude;
-		 
-		 normalized.y = (int) (((long) normalized.y * invMagnitude) >> FP.FRACTION_BITS);
-		 // above replaces normalized.y *= invMagnitude;
-		 
-		 return normalized;
+		int magnitude = FP.POINT_0001;
+		if (x != 0 || y != 0) { // only do sqrt if at least one is non-zero
+			magnitude = FP.sqrt((int) (((long) x * x) >> FP.FRACTION_BITS) + (int) (((long) y * y) >> FP.FRACTION_BITS));
+			// above replaces magnitude = (float)Math.sqrt(x * x + y * y);
+		}
+		int invMagnitude = (int) (((long) FP.ONE << FP.FRACTION_BITS) / magnitude);
+		// above replaces float invMagnitude = 1 / magnitude;
+		
+		Vector2f normalized = new Vector2f(x, y);
+		
+		normalized.x = (int) (((long) normalized.x * invMagnitude) >> FP.FRACTION_BITS);
+		// above replaces normalized.x *= invMagnitude;
+		
+		normalized.y = (int) (((long) normalized.y * invMagnitude) >> FP.FRACTION_BITS);
+		// above replaces normalized.y *= invMagnitude;
+		
+		return normalized;
 	}
 	
 	public Vector2f normalizeEquals() {

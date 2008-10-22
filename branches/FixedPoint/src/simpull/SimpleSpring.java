@@ -104,10 +104,8 @@ public class SimpleSpring implements IConstraint {
 	 * @returns A Vector2f representing the center of this
 	 */			
 	public Vector2f getCenter() {
-		return new Vector2f((int) (((long) (particle1.position.x + particle2.position.x) << FP.FRACTION_BITS) / FP.TWO),
-				(int) (((long) (particle1.position.y + particle2.position.y) << FP.FRACTION_BITS) / FP.TWO));
-// above replaces		return new Vector2f((particle1.position.x + particle2.position.x) / 2f, 
-//				(particle1.position.y + particle2.position.y) / 2f);
+		return new Vector2f((particle1.position.x + particle2.position.x) >> 1,
+				(particle1.position.y + particle2.position.y) >> 1);
 	}
 	
 	/**
@@ -493,13 +491,13 @@ public class SimpleSpring implements IConstraint {
 			
 				// if collision is in the middle of collision particle set the velocity of both end 
 				// particles
-				if (t == FP.POINT_5) {
+				if (t == FP.ONE_HALF) {
 					particle1.setVelocity(velocity);
 					particle2.setVelocity(velocity);
 				
 				// otherwise change the velocity of the particle closest to contact
 				} else {
-					Particle corrParticle = (t < FP.POINT_5) ? particle1 : particle2;
+					Particle corrParticle = (t < FP.ONE_HALF) ? particle1 : particle2;
 					corrParticle.setVelocity(velocity);
 				}
 			}
@@ -635,9 +633,10 @@ public class SimpleSpring implements IConstraint {
 			// above replaces int denom = a * e - b * b;
 			
 			if (denom != 0) {
-				s = FP.clamp((b * f - c * e) / denom, 0, FP.ONE);
+				s = FP.clamp((int) (((long) b * f) >> FP.FRACTION_BITS) - (int) (((long) c * e) >> FP.FRACTION_BITS), 0, FP.ONE);
+				// above replaces s = FP.clamp((b * f - c * e) / denom, 0, FP.ONE);
 			} else {
-				s = FP.POINT_5; // give the midpoint for parallel lines
+				s = FP.ONE_HALF; // give the midpoint for parallel lines
 			}
 			
 			t = (int) (((long) (((int) (((long) b * s) >> FP.FRACTION_BITS)) + f) << FP.FRACTION_BITS) / e);

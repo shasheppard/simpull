@@ -474,8 +474,7 @@ public class Composite extends SimpullCollection implements IPhysicsObject, Even
 				minX = particle.position.x;
 			}
 		}
-		center.x = (int) (((long) (maxX - minX) << FP.FRACTION_BITS) / FP.TWO) + minX;
-		// above replaces center.x = ((maxX - minX) / 2f) + minX;
+		center.x = ((maxX - minX) >> 1) + minX;
 
 		int minY = FP.MAX_VALUE;
 		int maxY = FP.MIN_VALUE;
@@ -487,8 +486,7 @@ public class Composite extends SimpullCollection implements IPhysicsObject, Even
 				minY = particle.position.y;
 			}
 		}
-		center.y = (int) (((long) (maxY - minY) << FP.FRACTION_BITS) / FP.TWO) + minY;
-		// above replaces center.y = ((maxY - minY) / 2f) + minY;
+		center.y = ((maxY - minY) >> 1) + minY;
 		
 		return center;
 	}

@@ -516,7 +516,7 @@ public class SimpullCollection {
 				collisionDepth = depth;
 			}
 			depths[i] = depth;
-		}	
+		}
 		
 		// determine if the circle's center is in a vertex region
 		int radius = circle.getRadius();
@@ -525,7 +525,7 @@ public class SimpullCollection {
 
 			// get the distance from the closest vertex on rect to circle center
 			collisionNormal = new Vector2f(vertex.x - circle.samp.x, vertex.y - circle.samp.y);
-			
+
 			int mag = FP.sqrt((int) (((long) collisionNormal.x * collisionNormal.x) >> FP.FRACTION_BITS) + (int) (((long) collisionNormal.y * collisionNormal.y) >> FP.FRACTION_BITS));
 			// above replaces float mag = (float)Math.sqrt(collisionNormal.x * collisionNormal.x + collisionNormal.y * collisionNormal.y);
 			
