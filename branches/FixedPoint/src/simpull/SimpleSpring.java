@@ -358,19 +358,19 @@ public class SimpleSpring implements IConstraint {
 		/** @return the average mass of the two connected particles */
 		@Override
 		public int getMass() {
-			return (particle1.getMass() + particle2.getMass()) / 2; 
+			return (particle1.getMass() + particle2.getMass()) >> 1; 
 		}
 		
 		/** @return the average elasticity of the two connected particles */
 		@Override
 		public int getElasticity() {
-			return (particle1.getElasticity() + particle2.getElasticity()) / 2; 
+			return (particle1.getElasticity() + particle2.getElasticity()) >> 1; 
 		}
 		
 		/** @return the average friction of the two connected particles */
 		@Override
 		public int getFriction() {
-			return (particle1.getFriction() + particle2.getFriction()) / 2; 
+			return (particle1.getFriction() + particle2.getFriction()) >> 1; 
 		}
 		
 		/** @return the average velocity of the two connected particles */
@@ -379,8 +379,8 @@ public class SimpleSpring implements IConstraint {
 			Vector2f p1v =  particle1.getVelocity();
 			Vector2f p2v =  particle2.getVelocity();
 			
-			avgVelocity.x = (p1v.x + p2v.x) / 2;
-			avgVelocity.y = (p1v.y + p2v.y) / 2;
+			avgVelocity.x = (p1v.x + p2v.x) >> 1;
+			avgVelocity.y = (p1v.y + p2v.y) >> 1;
 			return avgVelocity;
 		}	
 		
@@ -409,9 +409,12 @@ public class SimpleSpring implements IConstraint {
 			position.x = center.x;
 			position.y = center.y;
 			
-			setWidth((scaleToLength) ? 
-					parent.getCurrLength() * getRectScale() : 
-					parent.getRestLength() * getRectScale());
+			setWidth(scaleToLength 
+					? (int) (((long) parent.getCurrLength() * getRectScale()) >> FP.FRACTION_BITS)
+					: (int) (((long) parent.getRestLength() * getRectScale()) >> FP.FRACTION_BITS));
+// above replaces			setWidth((scaleToLength) ? 
+//					parent.getCurrLength() * getRectScale() : 
+//					parent.getRestLength() * getRectScale());
 			setHeight(getRectHeight());
 			setRotation(parent.getRotation());
 		}
